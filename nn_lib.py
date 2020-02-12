@@ -162,8 +162,13 @@ class LinearLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        self._W = None
-        self._b = None
+        self._W = xavier_init(n_out)
+        for i in range(n_in - 1):
+            self._W = np.append(self._W, xavier_init(n_out), axis=0)
+
+        self._b = xavier_init(n_out)
+        for i in range(n_in - 1):
+            self._b = np.append(self._b, xavier_init(n_out), axis=0)
 
         self._cache_current = None
         self._grad_W_current = None
@@ -189,8 +194,10 @@ class LinearLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        # pass
 
+        self._cache_current = x
+        return np.dot(x, self._W) + self._b
         #######################################################################
         #                       ** END OF YOUR CODE **
         #######################################################################
@@ -212,7 +219,10 @@ class LinearLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        self._grad_W_current = np.dot(self._cache_current.T, grad_z)
+        self._grad_b_current = np.dot(np.ones(self.n_out).T, grad_z)
+
+        return np.dot(grad_z, self._W.T)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -229,7 +239,8 @@ class LinearLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        # pass
+        self._W -= learning_rate*self._grad_W_current
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -349,13 +360,13 @@ class Trainer(object):
     """
 
     def __init__(
-        self,
-        network,
-        batch_size,
-        nb_epoch,
-        learning_rate,
-        loss_fun,
-        shuffle_flag,
+            self,
+            network,
+            batch_size,
+            nb_epoch,
+            learning_rate,
+            loss_fun,
+            shuffle_flag,
     ):
         """Constructor.
 
