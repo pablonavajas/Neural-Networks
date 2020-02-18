@@ -554,7 +554,10 @@ class Trainer(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        forwards = self.network.forward(input_dataset)
+        loss = self.loss_fun.forward(forwards, target_dataset)
+
+        return loss
 
         #######################################################################
         #                       ** END OF YOUR CODE **
