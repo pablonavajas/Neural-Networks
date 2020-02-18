@@ -511,7 +511,31 @@ class Trainer(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        if self.shuffle_flag:
+            attributes, labels = self.shuffle(input_dataset, target_dataset)
+        else:
+            attributes = input_dataset
+            labels = target_dataset
+
+        for i in range(self.nb_epoch):
+
+            # extract mini-batch
+            mini_batch = attributes[i*self.batch_size:(i+1)*self.batch_size]
+
+            # forwards pass through the network
+            forwards = self.network.forward(mini_batch)
+
+            # forwards pass in the loss function
+            self.loss_fun.forward(forwards, labels)
+
+            # backwards pass in the loss function
+            loss_gradients = self.loss_fun.bacwards()
+
+            # backwards pass through the network
+            self.network.backward(loss_gradients)
+
+            # one step gradient descent
+            self.network.update_params()
 
         #######################################################################
         #                       ** END OF YOUR CODE **
