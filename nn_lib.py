@@ -302,7 +302,17 @@ class MultiLayerNetwork(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+
+        # first layer and activation function output
+        layer_forward = self._layers[0].forward(x)
+        activation_output = self.activations[0].forward(layer_forward)
+
+        # run the first layer and activation output through the other layers
+        for i in range(1, self.activations.length):
+            layer_forward = self._layers[j].forward(activation_output)
+            activation_output = self.activations[i].forward(layer_forward)
+
+        return activation_output
 
         #######################################################################
         #                       ** END OF YOUR CODE **
