@@ -296,14 +296,14 @@ class MultiLayerNetwork(object):
         #                       ** START OF YOUR CODE **
         #######################################################################
         # initialize empty 1-D array of the size of the activation functions
-        self._layers = np.empty(activations, dtype=LinearLayer)
+        self._layers = np.empty(len(activations), dtype=LinearLayer)
 
         # add first layer to the _layers array
-        self._layers[0] = LinearLayer(input_dim, neurons)
+        self._layers[0] = LinearLayer(input_dim, neurons[0])
 
         # add the rest of the layers to the _layers array
-        for i in range(1, activations):
-            self._layers[i] = LinearLayer(neurons, neurons)
+        for i in range(1, len(activations)):
+            self._layers[i] = LinearLayer(neurons[i-1], neurons[i])
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -452,7 +452,12 @@ class Trainer(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        self._loss_layer = None
+        if loss_fun == "mse":
+            self._loss_layer = MSELossLayer();
+        elif loss_fun == "cross_entropy":
+            self._loss_layer = CrossEntropyLossLayer()
+        else:
+            self._loss_layer = None
         #######################################################################
         #                       ** END OF YOUR CODE **
         #######################################################################
@@ -596,42 +601,42 @@ def example_main():
     neurons = [16, 3]
     activations = ["relu", "identity"]
     net = MultiLayerNetwork(input_dim, neurons, activations)
-
-    dat = np.loadtxt("iris.dat")
-    np.random.shuffle(dat)
-
-    x = dat[:, :4]
-    y = dat[:, 4:]
-
-    split_idx = int(0.8 * len(x))
-
-    x_train = x[:split_idx]
-    y_train = y[:split_idx]
-    x_val = x[split_idx:]
-    y_val = y[split_idx:]
-
-    prep_input = Preprocessor(x_train)
-
-    x_train_pre = prep_input.apply(x_train)
-    x_val_pre = prep_input.apply(x_val)
-
-    trainer = Trainer(
-        network=net,
-        batch_size=8,
-        nb_epoch=1000,
-        learning_rate=0.01,
-        loss_fun="cross_entropy",
-        shuffle_flag=True,
-    )
-
-    trainer.train(x_train_pre, y_train)
-    print("Train loss = ", trainer.eval_loss(x_train_pre, y_train))
-    print("Validation loss = ", trainer.eval_loss(x_val_pre, y_val))
-
-    preds = net(x_val_pre).argmax(axis=1).squeeze()
-    targets = y_val.argmax(axis=1).squeeze()
-    accuracy = (preds == targets).mean()
-    print("Validation accuracy: {}".format(accuracy))
+    #
+    # dat = np.loadtxt("iris.dat")
+    # np.random.shuffle(dat)
+    #
+    # x = dat[:, :4]
+    # y = dat[:, 4:]
+    #
+    # split_idx = int(0.8 * len(x))
+    #
+    # x_train = x[:split_idx]
+    # y_train = y[:split_idx]
+    # x_val = x[split_idx:]
+    # y_val = y[split_idx:]
+    #
+    # prep_input = Preprocessor(x_train)
+    #
+    # x_train_pre = prep_input.apply(x_train)
+    # x_val_pre = prep_input.apply(x_val)
+    #
+    # trainer = Trainer(
+    #     network=net,
+    #     batch_size=8,
+    #     nb_epoch=1000,
+    #     learning_rate=0.01,
+    #     loss_fun="cross_entropy",
+    #     shuffle_flag=True,
+    # )
+    #
+    # trainer.train(x_train_pre, y_train)
+    # print("Train loss = ", trainer.eval_loss(x_train_pre, y_train))
+    # print("Validation loss = ", trainer.eval_loss(x_val_pre, y_val))
+    #
+    # preds = net(x_val_pre).argmax(axis=1).squeeze()
+    # targets = y_val.argmax(axis=1).squeeze()
+    # accuracy = (preds == targets).mean()
+    # print("Validation accuracy: {}".format(accuracy))
 
 
 if __name__ == "__main__":
