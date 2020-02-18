@@ -95,11 +95,10 @@ class SigmoidLayer(Layer):
         self._cache_current = None
 
     def forward(self, x):
-
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        self._cache_current = 1/(1+np.exp(-x))
+        self._cache_current = 1 / (1 + np.exp(-x))
         return self._cache_current
 
         #######################################################################
@@ -110,10 +109,9 @@ class SigmoidLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        # pass
 
-        return grad_z * self._cache_current*(1-self._cache_current)
-
+        # derivative of sigmoid is equal to g(z) * [1 - g(z)]
+        return grad_z * self._cache_current * (1 - self._cache_current)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -132,8 +130,7 @@ class ReluLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        # pass
-        self._cache_current = np.maximum(x,0)
+        self._cache_current = np.maximum(x, 0)
         return self._cache_current
 
         #######################################################################
@@ -144,7 +141,8 @@ class ReluLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        # pass
+        # derivative of ReLU is equal to { 0 for z <= 0
+        #                                { 1 for z > 0
         return grad_z * np.where(self._cache_current <= 0, 0, 1)
 
         #######################################################################
@@ -202,10 +200,9 @@ class LinearLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        # pass
-
         self._cache_current = x
         return np.dot(x, self._W) + self._b
+
         #######################################################################
         #                       ** END OF YOUR CODE **
         #######################################################################
@@ -247,8 +244,7 @@ class LinearLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        # pass
-        self._W -= learning_rate*self._grad_W_current
+        self._W -= learning_rate * self._grad_W_current
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -278,7 +274,16 @@ class MultiLayerNetwork(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        self._layers = None
+        # initialize empty 1-D array of the size of the activation functions
+        self._layers = np.empty(activations, dtype=LinearLayer)
+
+        # add first layer to the _layers array
+        self._layers[0] = LinearLayer(input_dim, neurons)
+
+        # add the rest of the layers to the _layers array
+        for i in range(1, activations):
+            self._layers[i] = LinearLayer(neurons, neurons)
+
         #######################################################################
         #                       ** END OF YOUR CODE **
         #######################################################################
