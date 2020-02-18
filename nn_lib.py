@@ -251,6 +251,25 @@ class LinearLayer(Layer):
         #######################################################################
 
 
+#######################################################################
+#                       ** HELPER FUNCTIONS **
+#######################################################################
+
+
+def activation_forward(x, activation_type):
+    if activation_type == "sigmoid":
+        activated_output = SigmoidLayer.forward(x)
+    else:
+        activated_output = ReluLayer.forward(x)
+
+    return activated_output
+
+
+#######################################################################
+#                       ** END OF HELPER FUNCTIONS **
+#######################################################################
+
+
 class MultiLayerNetwork(object):
     """
     MultiLayerNetwork: A network consisting of stacked linear layers and
@@ -305,12 +324,14 @@ class MultiLayerNetwork(object):
 
         # first layer and activation function output
         layer_forward = self._layers[0].forward(x)
-        activation_output = self.activations[0].forward(layer_forward)
+        activation_output = activation_forward(layer_forward,
+                                               self.activations[0])
 
         # run the first layer and activation output through the other layers
-        for i in range(1, self.activations.length):
-            layer_forward = self._layers[j].forward(activation_output)
-            activation_output = self.activations[i].forward(layer_forward)
+        for i in range(1, len(self.activations)):
+            layer_forward = self._layers[i].forward(activation_output)
+            activation_output = activation_forward(layer_forward,
+                                                   self.activations[i])
 
         return activation_output
 
