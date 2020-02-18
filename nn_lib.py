@@ -303,7 +303,7 @@ class MultiLayerNetwork(object):
 
         # add the rest of the layers to the _layers array
         for i in range(1, len(activations)):
-            self._layers[i] = LinearLayer(neurons[i-1], neurons[i])
+            self._layers[i] = LinearLayer(neurons[i - 1], neurons[i])
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -518,9 +518,9 @@ class Trainer(object):
             labels = target_dataset
 
         for i in range(self.nb_epoch):
-
             # extract mini-batch
-            mini_batch = attributes[i*self.batch_size:(i+1)*self.batch_size]
+            mini_batch = attributes[
+                         i * self.batch_size:(i + 1) * self.batch_size]
 
             # forwards pass through the network
             forwards = self.network.forward(mini_batch)
@@ -582,7 +582,8 @@ class Preprocessor(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        self.max_per_col = data.max(axis=0)
+        self.min_per_col = data.max(axis=0)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -601,7 +602,8 @@ class Preprocessor(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+
+        return (data - self.min_per_col) / (self.max_per_col - self.min_per_col)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -620,7 +622,7 @@ class Preprocessor(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        return data*(self.max_per_col - self.min_per_col) + self.min_per_col
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -632,42 +634,42 @@ def example_main():
     neurons = [16, 3]
     activations = ["relu", "identity"]
     net = MultiLayerNetwork(input_dim, neurons, activations)
-    #
-    # dat = np.loadtxt("iris.dat")
-    # np.random.shuffle(dat)
-    #
-    # x = dat[:, :4]
-    # y = dat[:, 4:]
-    #
-    # split_idx = int(0.8 * len(x))
-    #
-    # x_train = x[:split_idx]
-    # y_train = y[:split_idx]
-    # x_val = x[split_idx:]
-    # y_val = y[split_idx:]
-    #
-    # prep_input = Preprocessor(x_train)
-    #
-    # x_train_pre = prep_input.apply(x_train)
-    # x_val_pre = prep_input.apply(x_val)
-    #
-    # trainer = Trainer(
-    #     network=net,
-    #     batch_size=8,
-    #     nb_epoch=1000,
-    #     learning_rate=0.01,
-    #     loss_fun="cross_entropy",
-    #     shuffle_flag=True,
-    # )
-    #
-    # trainer.train(x_train_pre, y_train)
-    # print("Train loss = ", trainer.eval_loss(x_train_pre, y_train))
-    # print("Validation loss = ", trainer.eval_loss(x_val_pre, y_val))
-    #
-    # preds = net(x_val_pre).argmax(axis=1).squeeze()
-    # targets = y_val.argmax(axis=1).squeeze()
-    # accuracy = (preds == targets).mean()
-    # print("Validation accuracy: {}".format(accuracy))
+
+    dat = np.loadtxt("iris.dat")
+    np.random.shuffle(dat)
+
+    x = dat[:, :4]
+    y = dat[:, 4:]
+
+    split_idx = int(0.8 * len(x))
+
+    x_train = x[:split_idx]
+    y_train = y[:split_idx]
+    x_val = x[split_idx:]
+    y_val = y[split_idx:]
+
+    prep_input = Preprocessor(x_train)
+
+    x_train_pre = prep_input.apply(x_train)
+    x_val_pre = prep_input.apply(x_val)
+
+    trainer = Trainer(
+        network=net,
+        batch_size=8,
+        nb_epoch=1000,
+        learning_rate=0.01,
+        loss_fun="cross_entropy",
+        shuffle_flag=True,
+    )
+
+    trainer.train(x_train_pre, y_train)
+    print("Train loss = ", trainer.eval_loss(x_train_pre, y_train))
+    print("Validation loss = ", trainer.eval_loss(x_val_pre, y_val))
+
+    preds = net(x_val_pre).argmax(axis=1).squeeze()
+    targets = y_val.argmax(axis=1).squeeze()
+    accuracy = (preds == targets).mean()
+    print("Validation accuracy: {}".format(accuracy))
 
 
 if __name__ == "__main__":
