@@ -255,14 +255,16 @@ class LinearLayer(Layer):
 #                       ** HELPER FUNCTIONS **
 #######################################################################
 
+def activationsArray(activation_types):
+    """ Generates an array of activation functions """
+    activations = np.empty(len(activation_types))
+    for i, activation_type in enumerate(activation_types, 0):
+        if activation_type == "sigmoid":
+            activations[i] = SigmoidLayer()
+        else:
+            activations[i] = ReluLayer()
 
-def activation_forward(x, activation_type):
-    if activation_type == "sigmoid":
-        activated_output = SigmoidLayer.forward(x)
-    else:
-        activated_output = ReluLayer.forward(x)
-
-    return activated_output
+    return activations
 
 
 #######################################################################
@@ -324,16 +326,15 @@ class MultiLayerNetwork(object):
 
         # first layer and activation function output
         layer_forward = self._layers[0].forward(x)
-        activation_output = activation_forward(layer_forward,
-                                               self.activations[0])
+        activations = activationsArray(self.activations)
+        activation_forward = activations[0].forward(layer_forward)
 
         # run the first layer and activation output through the other layers
         for i in range(1, len(self.activations)):
-            layer_forward = self._layers[i].forward(activation_output)
-            activation_output = activation_forward(layer_forward,
-                                                   self.activations[i])
+            layer_forward = self._layers[i].forward(activation_forward)
+            activation_forward = activations[i].forward(layer_forward)
 
-        return activation_output
+        return activation_forward
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -357,7 +358,22 @@ class MultiLayerNetwork(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+
+        # get length of activations array
+        length = len(self.activations)
+
+        # first layer and activation function output
+        layer_backward = self._layers[length].backward(grad_z)
+        activations = activationsArray(self.activations)
+        activation_backward = activations[length](layer_backward)
+
+        # run the last layer and activation backward through the other layers
+        # in descending order
+        for i in range(length, 0, -1):  # doesn't include 0
+            layer_backward = self._layers[i].backward(activation_backward)
+            activation_backward = activations[i].backward(layer_backward)
+
+        return activation_backward
 
         #######################################################################
         #                       ** END OF YOUR CODE **
