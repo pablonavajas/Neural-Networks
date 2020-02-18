@@ -478,8 +478,12 @@ class Trainer(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        indices = np.arange(input_dataset.shape[0])
+        np.random.shuffle(indices)
+        attributes = input_dataset[indices]
+        labels = target_dataset[indices]
 
+        return attributes, labels
         #######################################################################
         #                       ** END OF YOUR CODE **
         #######################################################################
