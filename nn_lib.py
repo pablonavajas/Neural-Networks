@@ -169,12 +169,13 @@ class LinearLayer(Layer):
         #                       ** START OF YOUR CODE **
         #######################################################################
         self._W = xavier_init(n_out)
+
         for i in range(n_in - 1):
-            self._W = np.append(self._W, xavier_init(n_out), axis=0)
+            self._W = np.vstack((self._W, xavier_init(n_out)))
+
+        self._W = self._W
 
         self._b = xavier_init(n_out)
-        for i in range(n_in - 1):
-            self._b = np.append(self._b, xavier_init(n_out), axis=0)
 
         self._cache_current = None
         self._grad_W_current = None
@@ -200,6 +201,11 @@ class LinearLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
+        batch_size = x.shape[0]
+        #
+        # for i in range(n_in - 1):
+        #     self._b = np.vstack((self._b, xavier_init(n_out)))
+
         self._cache_current = x
         return np.dot(x, self._W) + self._b
 
@@ -225,7 +231,7 @@ class LinearLayer(Layer):
         #                       ** START OF YOUR CODE **
         #######################################################################
         self._grad_W_current = np.dot(self._cache_current.T, grad_z)
-        self._grad_b_current = np.dot(np.ones(self.n_out).T, grad_z)
+        self._grad_b_current = np.dot(np.ones(grad_z.shape[0]).T, grad_z)
 
         return np.dot(grad_z, self._W.T)
 
@@ -254,14 +260,28 @@ class LinearLayer(Layer):
 #######################################################################
 #                       ** HELPER FUNCTIONS **
 #######################################################################
+class Identity(Layer):
+    def __init__(self):
+        pass
+
+    def __call__(self):
+        pass
+
+    def forward(self, x):
+        return x
+
+    def backward(self, grad_z):
+        shape = grad_z.shape
+        return np.ones(shape)
+
 
 def activationsArray(activation_types):
     """ Generates an array of activation functions """
-    activations = np.empty(len(activation_types))
+    activations = np.empty(len(activation_types), dtype=Layer)
     for i, activation_type in enumerate(activation_types, 0):
         if activation_type == "sigmoid":
             activations[i] = SigmoidLayer()
-        else:
+        else:  # activation_type == "ReLU"
             activations[i] = ReluLayer()
 
     return activations
@@ -290,7 +310,7 @@ class MultiLayerNetwork(object):
         """
         self.input_dim = input_dim
         self.neurons = neurons
-        self.activations = activations
+        self.activations = activationsArray(activations)
 
         #######################################################################
         #                       ** START OF YOUR CODE **
@@ -326,13 +346,12 @@ class MultiLayerNetwork(object):
 
         # first layer and activation function output
         layer_forward = self._layers[0].forward(x)
-        activations = activationsArray(self.activations)
-        activation_forward = activations[0].forward(layer_forward)
+        activation_forward = self.activations[0].forward(layer_forward)
 
         # run the first layer and activation output through the other layers
         for i in range(1, len(self.activations)):
             layer_forward = self._layers[i].forward(activation_forward)
-            activation_forward = activations[i].forward(layer_forward)
+            activation_forward = self.activations[i].forward(layer_forward)
 
         return activation_forward
 
@@ -363,15 +382,15 @@ class MultiLayerNetwork(object):
         length = len(self.activations)
 
         # first layer and activation function output
-        layer_backward = self._layers[length].backward(grad_z)
-        activations = activationsArray(self.activations)
-        activation_backward = activations[length](layer_backward)
+        activation_backward = self.activations[length - 1].backward(
+            grad_z)
+        layer_backward = self._layers[length - 1].backward(activation_backward)
 
         # run the last layer and activation backward through the other layers
         # in descending order
-        for i in range(length, 0, -1):  # doesn't include 0
+        for i in range(length - 2, -1, -1):  # includes 0
+            activation_backward = self.activations[i].backward(layer_backward)
             layer_backward = self._layers[i].backward(activation_backward)
-            activation_backward = activations[i].backward(layer_backward)
 
         return activation_backward
 
@@ -511,31 +530,33 @@ class Trainer(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        if self.shuffle_flag:
-            attributes, labels = self.shuffle(input_dataset, target_dataset)
-        else:
-            attributes = input_dataset
-            labels = target_dataset
 
         for i in range(self.nb_epoch):
-            # extract mini-batch
-            mini_batch = attributes[
-                         i * self.batch_size:(i + 1) * self.batch_size]
+            if self.shuffle_flag:
+                att, lab = self.shuffle(input_dataset, target_dataset)
+            else:
+                att = input_dataset
+                lab = target_dataset
 
-            # forwards pass through the network
-            forwards = self.network.forward(mini_batch)
+            for j in range(len(att) // self.batch_size):
+                # extract mini-batch
+                att_batch = att[j * self.batch_size:(j + 1) * self.batch_size]
+                lab_batch = lab[j * self.batch_size:(j + 1) * self.batch_size]
 
-            # forwards pass in the loss function
-            self.loss_fun.forward(forwards, labels)
+                # forwards pass through the network
+                forwards = self.network.forward(att_batch)
 
-            # backwards pass in the loss function
-            loss_gradients = self.loss_fun.bacwards()
+                # forwards pass in the loss function
+                self._loss_layer.forward(forwards, lab_batch)
 
-            # backwards pass through the network
-            self.network.backward(loss_gradients)
+                # backwards pass in the loss function
+                loss_gradients = self._loss_layer.backward()
 
-            # one step gradient descent
-            self.network.update_params()
+                # backwards pass through the network
+                self.network.backward(loss_gradients)
+
+                # one step gradient descent
+                self.network.update_params(self.learning_rate)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -555,7 +576,7 @@ class Trainer(object):
         #                       ** START OF YOUR CODE **
         #######################################################################
         forwards = self.network.forward(input_dataset)
-        loss = self.loss_fun.forward(forwards, target_dataset)
+        loss = self._loss_layer.forward(forwards, target_dataset)
 
         return loss
 
@@ -583,7 +604,7 @@ class Preprocessor(object):
         #                       ** START OF YOUR CODE **
         #######################################################################
         self.max_per_col = data.max(axis=0)
-        self.min_per_col = data.max(axis=0)
+        self.min_per_col = data.min(axis=0)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -622,7 +643,7 @@ class Preprocessor(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        return data*(self.max_per_col - self.min_per_col) + self.min_per_col
+        return data * (self.max_per_col - self.min_per_col) + self.min_per_col
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -652,6 +673,10 @@ def example_main():
 
     x_train_pre = prep_input.apply(x_train)
     x_val_pre = prep_input.apply(x_val)
+
+    print(x_train_pre)
+    print(x_val_pre)
+
 
     trainer = Trainer(
         network=net,
