@@ -168,12 +168,10 @@ class LinearLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        self._W = xavier_init(n_out)
+        self._W = xavier_init((n_in, n_out))
 
-        for i in range(n_in - 1):
-            self._W = np.vstack((self._W, xavier_init(n_out)))
-
-        self._W = self._W
+        # for i in range(n_in - 1):
+        #     self._W = np.vstack((self._W, xavier_init(n_out)))
 
         self._b = xavier_init(n_out)
 
@@ -201,7 +199,7 @@ class LinearLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        batch_size = x.shape[0]
+        # batch_size = x.shape[0]
         #
         # for i in range(n_in - 1):
         #     self._b = np.vstack((self._b, xavier_init(n_out)))
@@ -251,6 +249,8 @@ class LinearLayer(Layer):
         #                       ** START OF YOUR CODE **
         #######################################################################
         self._W -= learning_rate * self._grad_W_current
+        # TODO: account for batches
+        # TODO: update biases
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -262,9 +262,6 @@ class LinearLayer(Layer):
 #######################################################################
 class Identity(Layer):
     def __init__(self):
-        pass
-
-    def __call__(self):
         pass
 
     def forward(self, x):
@@ -280,9 +277,14 @@ def activationsArray(activation_types):
     activations = np.empty(len(activation_types), dtype=Layer)
     for i, activation_type in enumerate(activation_types, 0):
         if activation_type == "sigmoid":
+            print("sigmoid")
             activations[i] = SigmoidLayer()
-        else:  # activation_type == "ReLU"
+        elif activation_type == "relu":
+            print("relu")
             activations[i] = ReluLayer()
+        else:
+            print('identity')
+            activations[i] = Identity()
 
     return activations
 
@@ -378,21 +380,26 @@ class MultiLayerNetwork(object):
         #                       ** START OF YOUR CODE **
         #######################################################################
 
-        # get length of activations array
-        length = len(self.activations)
+        i = len(self._layers)-1
+        while i >= 0:
+            grad_z = self._layers[i].backward(grad_z)
+            i -= 1
 
-        # first layer and activation function output
-        activation_backward = self.activations[length - 1].backward(
-            grad_z)
-        layer_backward = self._layers[length - 1].backward(activation_backward)
-
-        # run the last layer and activation backward through the other layers
-        # in descending order
-        for i in range(length - 2, -1, -1):  # includes 0
-            activation_backward = self.activations[i].backward(layer_backward)
-            layer_backward = self._layers[i].backward(activation_backward)
-
-        return activation_backward
+        # # get length of activations array
+        # length = len(self.activations)
+        #
+        # # first layer and activation function output
+        # activation_backward = self.activations[length - 1].backward(
+        #     grad_z)
+        # layer_backward = self._layers[length - 1].backward(activation_backward)
+        #
+        # # run the last layer and activation backward through the other layers
+        # # in descending order
+        # for i in range(length - 2, -1, -1):  # includes 0
+        #     activation_backward = self.activations[i].backward(layer_backward)
+        #     layer_backward = self._layers[i].backward(activation_backward)
+        #
+        # return activation_backward
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -540,8 +547,12 @@ class Trainer(object):
 
             for j in range(len(att) // self.batch_size):
                 # extract mini-batch
-                att_batch = att[j * self.batch_size:(j + 1) * self.batch_size]
-                lab_batch = lab[j * self.batch_size:(j + 1) * self.batch_size]
+                if (j + 1) * self.batch_size < len(att):
+                    att_batch = att[j * self.batch_size:(j + 1) * self.batch_size]
+                    lab_batch = lab[j * self.batch_size:(j + 1) * self.batch_size]
+                else:
+                    att_batch = att[j * self.batch_size:len(att)-1]
+                    lab_batch = lab[j * self.batch_size:len(att)-1]
 
                 # forwards pass through the network
                 forwards = self.network.forward(att_batch)
@@ -653,7 +664,7 @@ class Preprocessor(object):
 def example_main():
     input_dim = 4
     neurons = [16, 3]
-    activations = ["relu", "identity"]
+    activations = ["relu", "relu"]
     net = MultiLayerNetwork(input_dim, neurons, activations)
 
     dat = np.loadtxt("iris.dat")
@@ -673,10 +684,6 @@ def example_main():
 
     x_train_pre = prep_input.apply(x_train)
     x_val_pre = prep_input.apply(x_val)
-
-    print(x_train_pre)
-    print(x_val_pre)
-
 
     trainer = Trainer(
         network=net,
