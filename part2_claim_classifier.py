@@ -84,13 +84,12 @@ class ClaimClassifier(nn.Module):
         nr_batches = math.ceil(X_raw.shape[0] / self.batch_size)
 
         optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
-        #criterion = nn.CrossEntropyLoss()
+        #Binary Cross Entropy
         criterion = nn.BCELoss()
 
         for epoch in range(self.num_epochs):
             indices = np.random.permutation(X_raw.shape[0])
             X_shuffled = X_clean[indices].astype(np.float32)
-            #y_shuffled = y_raw[indices]
             y_shuffled = y_raw[indices].astype(np.float32)
 
             X_batches = np.array_split(X_shuffled, nr_batches)
@@ -100,14 +99,9 @@ class ClaimClassifier(nn.Module):
                 X = torch.from_numpy(X)
                 y = torch.from_numpy(y)
 
-                #print(X.size())
-                #print(y.size())
-
                 # run forwards
                 outputs = self.forward(X)
-                #print(outputs.size())
                 loss = criterion(outputs, y)
-                #print(loss)
 
                 # backprop
                 optimizer.zero_grad()
@@ -116,11 +110,8 @@ class ClaimClassifier(nn.Module):
 
                 # track the accuracy
                 total = y.size(0)
-                #print(outputs.data)
                 _, predicted = torch.max(outputs.data, 1)
                 correct = (predicted == y).sum().item()
-                #print(total)
-                #print(correct)
 
             print('Epoch [{}/{}], Loss: {:.4f}, Accuracy: {:.2f}%'
                   .format(epoch + 1, self.num_epochs, loss.item(),
@@ -152,19 +143,12 @@ class ClaimClassifier(nn.Module):
         X = torch.from_numpy(X_clean)
         outputs = self.forward(X)
 
-        #print(outputs)
-        print(outputs.data)
+        #create a (rx1 numpy array; here r = 20000)
+        arr = outputs.data.numpy()
+        arr = [x[0] for x in arr]
+        arr = np.array(arr)
 
-        _, predicted = torch.max(outputs.data, 1)
-
-        print(predicted)
-        
-        """
-        total = (predicted != 0).sum().item()
-        print(total)
-        """
-        #print(predicted)
-        return  # YOUR PREDICTED CLASS LABELS
+        return arr
 
     def evaluate_architecture(self):
         """Architecture evaluation utility.
