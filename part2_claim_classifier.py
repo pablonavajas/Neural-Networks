@@ -28,6 +28,7 @@ class ClaimClassifier():
             A clean data set that is used for training and prediction.
         """
         # YOUR CODE HERE
+        #SIMPLE TEST FOR GIT BRANCH
 
         return  # YOUR CLEAN DATA AS A NUMPY ARRAY
 
