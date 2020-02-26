@@ -22,15 +22,17 @@ class ClaimClassifier(nn.Module):
     
         #Model set-up
         self.layer1 = nn.Linear(9,4)
-        self.ReLU = nn.ReLU()
+        #self.ReLU = nn.ReLU()
         self.dropout = nn.Dropout()
-        self.layer2 = nn.Linear(4,2)
+        self.layer2 = nn.Linear(4,1)
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
         out = self.layer1(x)
-        out = self.ReLU(out)
+        #out = self.ReLU(out)
         out = self.dropout(out)
         out = self.layer2(out)
+        out = self.sigmoid(out)
         return out
 
     def _preprocessor(self, X_raw):
@@ -82,12 +84,14 @@ class ClaimClassifier(nn.Module):
         nr_batches = math.ceil(X_raw.shape[0] / self.batch_size)
 
         optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
-        criterion = nn.CrossEntropyLoss()
+        #criterion = nn.CrossEntropyLoss()
+        criterion = nn.BCELoss()
 
         for epoch in range(self.num_epochs):
             indices = np.random.permutation(X_raw.shape[0])
             X_shuffled = X_clean[indices].astype(np.float32)
-            y_shuffled = y_raw[indices]
+            #y_shuffled = y_raw[indices]
+            y_shuffled = y_raw[indices].astype(np.float32)
 
             X_batches = np.array_split(X_shuffled, nr_batches)
             y_batches = np.array_split(y_shuffled, nr_batches)
@@ -96,9 +100,14 @@ class ClaimClassifier(nn.Module):
                 X = torch.from_numpy(X)
                 y = torch.from_numpy(y)
 
+                #print(X.size())
+                #print(y.size())
+
                 # run forwards
                 outputs = self.forward(X)
+                #print(outputs.size())
                 loss = criterion(outputs, y)
+                #print(loss)
 
                 # backprop
                 optimizer.zero_grad()
@@ -107,8 +116,11 @@ class ClaimClassifier(nn.Module):
 
                 # track the accuracy
                 total = y.size(0)
+                #print(outputs.data)
                 _, predicted = torch.max(outputs.data, 1)
                 correct = (predicted == y).sum().item()
+                #print(total)
+                #print(correct)
 
             print('Epoch [{}/{}], Loss: {:.4f}, Accuracy: {:.2f}%'
                   .format(epoch + 1, self.num_epochs, loss.item(),
@@ -139,11 +151,19 @@ class ClaimClassifier(nn.Module):
         X_clean = X_clean.astype(np.float32)
         X = torch.from_numpy(X_clean)
         outputs = self.forward(X)
+
+        #print(outputs)
+        print(outputs.data)
+
         _, predicted = torch.max(outputs.data, 1)
 
+        print(predicted)
+        
+        """
         total = (predicted != 0).sum().item()
         print(total)
-
+        """
+        #print(predicted)
         return  # YOUR PREDICTED CLASS LABELS
 
     def evaluate_architecture(self):
