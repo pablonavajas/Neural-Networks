@@ -9,27 +9,29 @@ import math
 
 class ClaimClassifier(nn.Module):
 
-    def __init__(self, in_size, out_size):
+    def __init__(self):
         """
         Feel free to alter this as you wish, adding instance variables as
         necessary. 
         """
-        super().__init__()
-        self.in_size = in_size
-        self.out_size = out_size
-        self.hidden_sizes = [4]
+        super(ClaimClassifier, self).__init__()
+        #Attributes
         self.batch_size = 100
         self.num_epochs = 20
         self.learning_rate = 0.001
+    
+        #Model set-up
+        self.layer1 = nn.Linear(9,4)
+        self.ReLU = nn.ReLU()
+        self.dropout = nn.Dropout()
+        self.layer2 = nn.Linear(4,2)
 
-        self.model = nn.Sequential(
-            nn.Linear(self.in_size, self.hidden_sizes[0]),
-            nn.ReLU(),
-
-            nn.Dropout(),
-
-            nn.Linear(self.hidden_sizes[0], self.out_size))
-            #nn.Softmax(dim=1))
+    def forward(self, x):
+        out = self.layer1(x)
+        out = self.ReLU(out)
+        out = self.dropout(out)
+        out = self.layer2(out)
+        return out
 
     def _preprocessor(self, X_raw):
         """Data preprocessing function.
@@ -48,12 +50,11 @@ class ClaimClassifier(nn.Module):
             A clean data set that is used for training and prediction.
         """
         # YOUR CODE HERE
-        self.max_per_col = X_raw.max(axis=0)
-        self.min_per_col = X_raw.min(axis=0)
+        max_per_col = X_raw.max(axis=0)
+        min_per_col = X_raw.min(axis=0)
 
-        Z = (X_raw - self.min_per_col) / (
-                self.max_per_col - self.min_per_col)
-        #print(np.min(Z))
+        Z = (X_raw - min_per_col) / (
+                max_per_col - min_per_col)
 
         return Z
 
@@ -85,8 +86,7 @@ class ClaimClassifier(nn.Module):
 
         for epoch in range(self.num_epochs):
             indices = np.random.permutation(X_raw.shape[0])
-            X_shuffled = X_clean[indices].astype(
-                np.float32)
+            X_shuffled = X_clean[indices].astype(np.float32)
             y_shuffled = y_raw[indices]
 
             X_batches = np.array_split(X_shuffled, nr_batches)
@@ -95,23 +95,10 @@ class ClaimClassifier(nn.Module):
             for i, (X, y) in enumerate(zip(X_batches, y_batches)):
                 X = torch.from_numpy(X)
                 y = torch.from_numpy(y)
-                #y = torch.unsqueeze(y, 1)
 
                 # run forwards
-                outputs = self.model(X)
-                #print(outputs.shape)
-
-                #outputs = outputs.view(-1)
-                #print(y)
-
-                #print(X.shape)
-                #print(y.size())
-                #print(outputs.size())
-
+                outputs = self.forward(X)
                 loss = criterion(outputs, y)
-
-                if i == 1:
-                    print(outputs)
 
                 # backprop
                 optimizer.zero_grad()
@@ -126,6 +113,7 @@ class ClaimClassifier(nn.Module):
             print('Epoch [{}/{}], Loss: {:.4f}, Accuracy: {:.2f}%'
                   .format(epoch + 1, self.num_epochs, loss.item(),
                           (correct / total) * 100))
+
         return self
 
     def predict(self, X_raw):
@@ -150,12 +138,11 @@ class ClaimClassifier(nn.Module):
         X_clean = self._preprocessor(X_raw)
         X_clean = X_clean.astype(np.float32)
         X = torch.from_numpy(X_clean)
-        outputs = self.model(X)
+        outputs = self.forward(X)
         _, predicted = torch.max(outputs.data, 1)
 
         total = (predicted != 0).sum().item()
         print(total)
-        # YOUR CODE HERE
 
         return  # YOUR PREDICTED CLASS LABELS
 
@@ -200,13 +187,11 @@ def ClaimClassifierHyperParameterSearch():
 
 def main():
     data = readData.Dataset("part2_training_data.csv")
-    attributes = data.attributes
-    labels = data.labels
 
-    classifier = ClaimClassifier(attributes.shape[1], 2)
+    classifier = ClaimClassifier()
 
-    classifier.fit(attributes, labels)
-    classifier.predict(attributes)
+    classifier.fit(data.attributes, data.labels)
+    classifier.predict(data.attributes)
 
 
 if __name__ == "__main__":
