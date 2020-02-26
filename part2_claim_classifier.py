@@ -4,7 +4,7 @@ import pickle
 
 class ClaimClassifier():
 
-    def __init__(self,):
+    def __init__(self, ):
         """
         Feel free to alter this as you wish, adding instance variables as
         necessary. 
@@ -28,9 +28,11 @@ class ClaimClassifier():
             A clean data set that is used for training and prediction.
         """
         # YOUR CODE HERE
-        #SIMPLE TEST FOR GIT BRANCH
+        self.max_per_col = X_raw.max(axis=0)
+        self.min_per_col = X_raw.min(axis=0)
 
-        return  # YOUR CLEAN DATA AS A NUMPY ARRAY
+        return (X_raw - self.min_per_col) / (
+                    self.max_per_col - self.min_per_col)
 
     def fit(self, X_raw, y_raw):
         """Classifier training function.
@@ -92,16 +94,19 @@ class ClaimClassifier():
         pass
 
     def save_model(self):
-        # Please alter this file appropriately to work in tandem with your load_model function below
+        # Please alter this file appropriately to work in tandem with your
+        # load_model function below
         with open('part2_claim_classifier.pickle', 'wb') as target:
             pickle.dump(self, target)
 
 
 def load_model():
-    # Please alter this section so that it works in tandem with the save_model method of your class
+    # Please alter this section so that it works in tandem with the
+    # save_model method of your class
     with open('part2_claim_classifier.pickle', 'rb') as target:
         trained_model = pickle.load(target)
     return trained_model
+
 
 # ENSURE TO ADD IN WHATEVER INPUTS YOU DEEM NECESSARRY TO THIS FUNCTION
 def ClaimClassifierHyperParameterSearch():
