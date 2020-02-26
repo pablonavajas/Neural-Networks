@@ -169,10 +169,6 @@ class LinearLayer(Layer):
         #                       ** START OF YOUR CODE **
         #######################################################################
         self._W = xavier_init((n_in, n_out))
-
-        # for i in range(n_in - 1):
-        #     self._W = np.vstack((self._W, xavier_init(n_out)))
-
         self._b = xavier_init(n_out)
 
         self._cache_current = None
@@ -199,10 +195,6 @@ class LinearLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        # batch_size = x.shape[0]
-        #
-        # for i in range(n_in - 1):
-        #     self._b = np.vstack((self._b, xavier_init(n_out)))
 
         self._cache_current = x
         return np.dot(x, self._W) + self._b
@@ -249,49 +241,12 @@ class LinearLayer(Layer):
         #                       ** START OF YOUR CODE **
         #######################################################################
         self._W -= learning_rate * self._grad_W_current
-        # TODO: account for batches
-        # TODO: update biases
+        self._b -= learning_rate * self._grad_b_current
 
+        # TODO: account for batches
         #######################################################################
         #                       ** END OF YOUR CODE **
         #######################################################################
-
-
-#######################################################################
-#                       ** HELPER FUNCTIONS **
-#######################################################################
-class Identity(Layer):
-    def __init__(self):
-        pass
-
-    def forward(self, x):
-        return x
-
-    def backward(self, grad_z):
-        shape = grad_z.shape
-        return np.ones(shape)
-
-
-def activationsArray(activation_types):
-    """ Generates an array of activation functions """
-    activations = np.empty(len(activation_types), dtype=Layer)
-    for i, activation_type in enumerate(activation_types, 0):
-        if activation_type == "sigmoid":
-            print("sigmoid")
-            activations[i] = SigmoidLayer()
-        elif activation_type == "relu":
-            print("relu")
-            activations[i] = ReluLayer()
-        else:
-            print('identity')
-            activations[i] = Identity()
-
-    return activations
-
-
-#######################################################################
-#                       ** END OF HELPER FUNCTIONS **
-#######################################################################
 
 
 class MultiLayerNetwork(object):
@@ -312,7 +267,7 @@ class MultiLayerNetwork(object):
         """
         self.input_dim = input_dim
         self.neurons = neurons
-        self.activations = activationsArray(activations)
+        self.activations = activations
 
         #######################################################################
         #                       ** START OF YOUR CODE **
@@ -346,16 +301,24 @@ class MultiLayerNetwork(object):
         #                       ** START OF YOUR CODE **
         #######################################################################
 
-        # first layer and activation function output
-        layer_forward = self._layers[0].forward(x)
-        activation_forward = self.activations[0].forward(layer_forward)
+        input_array = x
 
         # run the first layer and activation output through the other layers
-        for i in range(1, len(self.activations)):
-            layer_forward = self._layers[i].forward(activation_forward)
-            activation_forward = self.activations[i].forward(layer_forward)
+        for i in range(len(self.activations)):
+            layer_forward = self._layers[i].forward(input_array)
 
-        return activation_forward
+            # perform activation according to the activation layer type
+            if self.activations[i] == "sigmoid":
+                input_array = SigmoidLayer().forward(layer_forward)
+            elif self.activations[i] == "relu":
+                input_array = ReluLayer().forward(layer_forward)
+            elif self.activations[i] == "identity":
+                input_array = layer_forward
+            else:
+                raise ValueError("Activation function not supported by the"
+                                 "neural network mini-library")
+
+        return input_array
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -380,18 +343,20 @@ class MultiLayerNetwork(object):
         #                       ** START OF YOUR CODE **
         #######################################################################
 
-        i = len(self._layers)-1
+        i = len(self._layers) - 1
         while i >= 0:
             grad_z = self._layers[i].backward(grad_z)
             i -= 1
 
+        # TODO: why have we deleted backwards propagation for activation layers?
         # # get length of activations array
         # length = len(self.activations)
         #
         # # first layer and activation function output
         # activation_backward = self.activations[length - 1].backward(
         #     grad_z)
-        # layer_backward = self._layers[length - 1].backward(activation_backward)
+        # layer_backward = self._layers[length - 1].backward(
+        # activation_backward)
         #
         # # run the last layer and activation backward through the other layers
         # # in descending order
@@ -548,11 +513,13 @@ class Trainer(object):
             for j in range(len(att) // self.batch_size):
                 # extract mini-batch
                 if (j + 1) * self.batch_size < len(att):
-                    att_batch = att[j * self.batch_size:(j + 1) * self.batch_size]
-                    lab_batch = lab[j * self.batch_size:(j + 1) * self.batch_size]
+                    att_batch = att[
+                                j * self.batch_size:(j + 1) * self.batch_size]
+                    lab_batch = lab[
+                                j * self.batch_size:(j + 1) * self.batch_size]
                 else:
-                    att_batch = att[j * self.batch_size:len(att)-1]
-                    lab_batch = lab[j * self.batch_size:len(att)-1]
+                    att_batch = att[j * self.batch_size:len(att) - 1]
+                    lab_batch = lab[j * self.batch_size:len(att) - 1]
 
                 # forwards pass through the network
                 forwards = self.network.forward(att_batch)
@@ -664,7 +631,7 @@ class Preprocessor(object):
 def example_main():
     input_dim = 4
     neurons = [16, 3]
-    activations = ["relu", "relu"]
+    activations = ["relu", "identity"]
     net = MultiLayerNetwork(input_dim, neurons, activations)
 
     dat = np.loadtxt("iris.dat")
