@@ -1,15 +1,35 @@
 import numpy as np
 import pickle
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import readData
+import math
 
 
-class ClaimClassifier():
+class ClaimClassifier(nn.Module):
 
-    def __init__(self, ):
+    def __init__(self, in_size, out_size):
         """
         Feel free to alter this as you wish, adding instance variables as
         necessary. 
         """
-        pass
+        super().__init__()
+        self.in_size = in_size
+        self.out_size = out_size
+        self.hidden_sizes = [4]
+        self.batch_size = 100
+        self.num_epochs = 20
+        self.learning_rate = 0.001
+
+        self.model = nn.Sequential(
+            nn.Linear(self.in_size, self.hidden_sizes[0]),
+            nn.ReLU(),
+
+            nn.Dropout(),
+
+            nn.Linear(self.hidden_sizes[0], self.out_size))
+            #nn.Softmax(dim=1))
 
     def _preprocessor(self, X_raw):
         """Data preprocessing function.
@@ -31,8 +51,11 @@ class ClaimClassifier():
         self.max_per_col = X_raw.max(axis=0)
         self.min_per_col = X_raw.min(axis=0)
 
-        return (X_raw - self.min_per_col) / (
-                    self.max_per_col - self.min_per_col)
+        Z = (X_raw - self.min_per_col) / (
+                self.max_per_col - self.min_per_col)
+        #print(np.min(Z))
+
+        return Z
 
     def fit(self, X_raw, y_raw):
         """Classifier training function.
@@ -53,9 +76,57 @@ class ClaimClassifier():
         """
 
         # REMEMBER TO HAVE THE FOLLOWING LINE SOMEWHERE IN THE CODE
-        # X_clean = self._preprocessor(X_raw)
-        # YOUR CODE HERE
-        pass
+        X_clean = self._preprocessor(X_raw)
+
+        nr_batches = math.ceil(X_raw.shape[0] / self.batch_size)
+
+        optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
+        criterion = nn.CrossEntropyLoss()
+
+        for epoch in range(self.num_epochs):
+            indices = np.random.permutation(X_raw.shape[0])
+            X_shuffled = X_clean[indices].astype(
+                np.float32)
+            y_shuffled = y_raw[indices]
+
+            X_batches = np.array_split(X_shuffled, nr_batches)
+            y_batches = np.array_split(y_shuffled, nr_batches)
+
+            for i, (X, y) in enumerate(zip(X_batches, y_batches)):
+                X = torch.from_numpy(X)
+                y = torch.from_numpy(y)
+                #y = torch.unsqueeze(y, 1)
+
+                # run forwards
+                outputs = self.model(X)
+                #print(outputs.shape)
+
+                #outputs = outputs.view(-1)
+                #print(y)
+
+                #print(X.shape)
+                #print(y.size())
+                #print(outputs.size())
+
+                loss = criterion(outputs, y)
+
+                if i == 1:
+                    print(outputs)
+
+                # backprop
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+                # track the accuracy
+                total = y.size(0)
+                _, predicted = torch.max(outputs.data, 1)
+                correct = (predicted == y).sum().item()
+
+            print('Epoch [{}/{}], Loss: {:.4f}, Accuracy: {:.2f}%'
+                  .format(epoch + 1, self.num_epochs, loss.item(),
+                          (correct / total) * 100))
+        return self
 
     def predict(self, X_raw):
         """Classifier probability prediction function.
@@ -76,8 +147,14 @@ class ClaimClassifier():
         """
 
         # REMEMBER TO HAVE THE FOLLOWING LINE SOMEWHERE IN THE CODE
-        # X_clean = self._preprocessor(X_raw)
+        X_clean = self._preprocessor(X_raw)
+        X_clean = X_clean.astype(np.float32)
+        X = torch.from_numpy(X_clean)
+        outputs = self.model(X)
+        _, predicted = torch.max(outputs.data, 1)
 
+        total = (predicted != 0).sum().item()
+        print(total)
         # YOUR CODE HERE
 
         return  # YOUR PREDICTED CLASS LABELS
@@ -119,3 +196,18 @@ def ClaimClassifierHyperParameterSearch():
     """
 
     return  # Return the chosen hyper parameters
+
+
+def main():
+    data = readData.Dataset("part2_training_data.csv")
+    attributes = data.attributes
+    labels = data.labels
+
+    classifier = ClaimClassifier(attributes.shape[1], 2)
+
+    classifier.fit(attributes, labels)
+    classifier.predict(attributes)
+
+
+if __name__ == "__main__":
+    main()
