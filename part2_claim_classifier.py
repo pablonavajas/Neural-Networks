@@ -281,9 +281,9 @@ class ClaimClassifier(nn.Module):
 
         x = np.arange(1,num_epochs+1) 
         y = losses[x-1]
-        plt.title("Matplotlib demo") 
-        plt.xlabel("x axis caption") 
-        plt.ylabel("y axis caption") 
+        plt.title("Loss vs nr of epochs")
+        plt.xlabel("Number of epochs")
+        plt.ylabel("Loss")
         plt.plot(x,y) 
         plt.show()
 
