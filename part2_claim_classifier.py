@@ -135,6 +135,9 @@ class ClaimClassifier(nn.Module):
         # Binary Cross Entropy
         criterion = nn.BCELoss()
 
+        #Array of losses to be used for plotting
+        losses = np.zeros(self.num_epochs, dtype = float)
+
         for epoch in range(self.num_epochs):
             indices = np.random.permutation(X_raw.shape[0])
             X_shuffled = X_clean[indices].astype(np.float32)
@@ -176,6 +179,14 @@ class ClaimClassifier(nn.Module):
             print('Epoch [{}/{}], Loss: {:.4f}, Accuracy: {:.2f}%'
                   .format(epoch + 1, self.num_epochs, loss.item(),
                           (correct / total) * 100))
+
+            losses[epoch] = loss.item()
+
+        #Debug
+        print(losses)
+        
+        #Plot the epochs-loss curve
+        self.plot_epochs_loss(self.num_epochs, losses)
 
         return self
 
@@ -253,6 +264,19 @@ class ClaimClassifier(nn.Module):
         plt.ylabel('True Positive Rate')
         plt.title('Receiver operating characteristic')
         plt.legend(loc="lower right")
+        plt.show()
+
+    def plot_epochs_loss(self, num_epochs, losses):
+        """
+        Plots the epochs on the x-axis, the value of the loss function on the y-axis.
+        """
+
+        x = np.arange(1,num_epochs+1) 
+        y = losses[x-1]
+        plt.title("Matplotlib demo") 
+        plt.xlabel("x axis caption") 
+        plt.ylabel("y axis caption") 
+        plt.plot(x,y) 
         plt.show()
 
     def save_model(self):
