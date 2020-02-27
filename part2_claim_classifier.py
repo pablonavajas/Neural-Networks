@@ -99,6 +99,9 @@ class ClaimClassifier(nn.Module):
                 X = torch.from_numpy(X)
                 y = torch.from_numpy(y)
 
+                #resize from 100 to (100,1)
+                y = y.view(-1,1)
+                
                 # run forwards
                 outputs = self.forward(X)
                 loss = criterion(outputs, y)
@@ -110,8 +113,17 @@ class ClaimClassifier(nn.Module):
 
                 # track the accuracy
                 total = y.size(0)
-                _, predicted = torch.max(outputs.data, 1)
-                correct = (predicted == y).sum().item()
+                #use first parameter from max function to get tensors of shape [100]
+                #for both the outputs and labels (converting from a 
+                #tensor of 1x100, each element being a list containing
+                #1 element)
+                output_values, predicted = torch.max(outputs.data, 1)
+                y_values, predicted_y = torch.max(y, 1)
+
+                #round the output probabilities in order to calculate accuracy
+                rounded_output_values = torch.round(output_values)
+                
+                correct = (rounded_output_values == y_values).sum().item()
 
             print('Epoch [{}/{}], Loss: {:.4f}, Accuracy: {:.2f}%'
                   .format(epoch + 1, self.num_epochs, loss.item(),
@@ -195,7 +207,8 @@ def main():
     classifier = ClaimClassifier()
 
     classifier.fit(data.attributes, data.labels)
-    classifier.predict(data.attributes)
+    arr = classifier.predict(data.attributes)
+    print(arr)
 
 
 if __name__ == "__main__":
