@@ -64,6 +64,7 @@ class ClaimClassifier(nn.Module):
         self.batch_size = batch_size
         self.num_epochs = num_epochs
         self.learning_rate = learning_rate
+        self.losses = np.zeros(self.num_epochs, dtype = float)
 
         # Model set-up
         # 1) Passing hidden_layers as a list
@@ -142,7 +143,7 @@ class ClaimClassifier(nn.Module):
         criterion = nn.BCELoss()
 
         #Array of losses to be used for plotting
-        losses = np.zeros(self.num_epochs, dtype = float)
+        #losses = np.zeros(self.num_epochs, dtype = float)
 
         for epoch in range(self.num_epochs):
             indices = np.random.permutation(X_raw.shape[0])
@@ -187,13 +188,13 @@ class ClaimClassifier(nn.Module):
                   .format(epoch + 1, self.num_epochs, loss.item(),
                           (correct / total) * 100))
 
-            losses[epoch] = loss.item()
+            self.losses[epoch] = loss.item()
 
         #Debug
-        print(losses)
+        #print(losses)
         
         #Plot the epochs-loss curve
-        self.plot_epochs_loss(self.num_epochs, losses)
+        #self.plot_epochs_loss(self.num_epochs, losses)
 
         return self
 
@@ -420,6 +421,9 @@ def main():
 
     # Plot the ROC_AUC curve
     classifier.plot_ROC_AUC(auc, fpr, tpr)
+
+    # Plot the epochs-loss curve
+    classifier.plot_epochs_loss(classifier.num_epochs, classifier.losses)
 
 if __name__ == "__main__":
     main()
