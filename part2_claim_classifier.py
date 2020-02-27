@@ -208,34 +208,33 @@ def ClaimClassifierHyperParameterSearch():
     # learning rate and momentum
 
     data = readData.Dataset("part2_training_data.csv")
-    classifier = ClaimClassifier()
 
     # different options for hyperparameters
-    batch_size = [50, 100, 200, 300, 400, 500]
-    num_epochs = [10, 20, 30, 50]
-    optimizer = ['SGD', 'Adam', 'RMSprop']
-    # other optimizers ['Adagrad', 'Adadelta',  'Adamax','Nadam']
+    batch_size_arr = [50, 100, 200, 300, 400, 500]
+    num_epochs_arr = [10, 20, 30, 50]
+    optimizer_arr = ['SGD', 'Adam', 'RMSprop']
 
-    # create dictionary with all possible parameters
-    param_grid = dict(batch_size=batch_size, num_epochs=num_epochs,
-                      optimizer=optimizer)
+    classifier = ClaimClassifier()
 
-    # n_jobs=-1 (means using all processors in parallel for faster computation)
-    # cv is cross-validation splitting strategy (10 folds)
-    grid = GridSearchCV(estimator=classifier, param_grid=param_grid, n_jobs=-1,
-                        cv=10)
+    accuracies = []
+    params = []
 
-    # train and fit the model (using cross_validation)
-    grid_result = grid.fit(data.attributes, data.labels)
+    for batch_size in batch_size_arr:
+        for num_epochs in num_epochs_arr:
+            for optimizer in optimizer_arr:
+                classifier = ClaimClassifier(batch_size, num_epochs, optimizer)
 
-    # summarize results (best score is accuracy by default)
-    print("Best: %f using %s" % (
-        grid_result.best_score_, grid_result.best_params_))
-    means = grid_result.cv_results_['mean_test_score']
-    stds = grid_result.cv_results_['std_test_score']
-    params = grid_result.cv_results_['params']
-    for mean, stdev, param in zip(means, stds, params):
-        print("%f (%f) with: %r" % (mean, stdev, param))
+                #evaluate architecture should store self.accuracy,
+                # self.precision, self.f1score etc.
+                classifier.evaluate_architecture();
+                accuracies.append(classifier.accuracy)
+                params.append([batch_size, num_epochs, optimizer])
+
+    #need to find index of max accuracies
+    max_accuracy = max(accuracies)
+
+    #get the respective params of the max accuracy index
+    params = #to be completed (Iurie)
 
     return params
 
