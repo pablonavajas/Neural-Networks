@@ -98,6 +98,7 @@ class SigmoidLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
+
         self._cache_current = 1 / (1 + np.exp(-x))
         return self._cache_current
 
@@ -272,19 +273,37 @@ class MultiLayerNetwork(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        # initialize empty 1-D array of the size of the activation functions
-        self._layers = np.empty(len(activations), dtype=LinearLayer)
 
-        # add first layer to the _layers array
-        self._layers[0] = LinearLayer(input_dim, neurons[0])
+        self._layers = []
 
-        # add the rest of the layers to the _layers array
-        for i in range(1, len(activations)):
-            self._layers[i] = LinearLayer(neurons[i - 1], neurons[i])
+        # add first linear layer and activation layer to _layers array
+        self._layers.append(LinearLayer(input_dim, neurons[0]))
+        activation = self._the_activation(activations[0])
+        if activation is not None:
+            self._layers.append(activation)
+
+        # add the rest of the linear layers and activation layers to _layers
+        for i in range(len(neurons)-1):
+            self._layers.append(LinearLayer(neurons[i], neurons[i+1]))
+            activation = self._the_activation(activations[i+1])
+            if activation is not None:
+                self._layers.append(activation)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
         #######################################################################
+
+
+    @staticmethod
+    def _the_activation(a):
+        if a == "relu":
+            return ReluLayer()
+        elif a == "sigmoid":
+            return SigmoidLayer()
+        elif a == "identity":
+            return None
+        else:
+            raise Exception("Unknown activation")
 
     def forward(self, x):
         """
@@ -303,20 +322,8 @@ class MultiLayerNetwork(object):
 
         input_array = x
 
-        # run the first layer and activation output through the other layers
-        for i in range(len(self.activations)):
-            layer_forward = self._layers[i].forward(input_array)
-
-            # perform activation according to the activation layer type
-            if self.activations[i] == "sigmoid":
-                input_array = SigmoidLayer().forward(layer_forward)
-            elif self.activations[i] == "relu":
-                input_array = ReluLayer().forward(layer_forward)
-            elif self.activations[i] == "identity":
-                input_array = layer_forward
-            else:
-                raise ValueError("Activation function not supported by the"
-                                 "neural network mini-library")
+        for i in self._layers:
+            input_array = i.forward(input_array)
 
         return input_array
 
@@ -346,25 +353,7 @@ class MultiLayerNetwork(object):
         i = len(self._layers) - 1
         while i >= 0:
             grad_z = self._layers[i].backward(grad_z)
-            i -= 1
-
-        # TODO: why have we deleted backwards propagation for activation layers?
-        # # get length of activations array
-        # length = len(self.activations)
-        #
-        # # first layer and activation function output
-        # activation_backward = self.activations[length - 1].backward(
-        #     grad_z)
-        # layer_backward = self._layers[length - 1].backward(
-        # activation_backward)
-        #
-        # # run the last layer and activation backward through the other layers
-        # # in descending order
-        # for i in range(length - 2, -1, -1):  # includes 0
-        #     activation_backward = self.activations[i].backward(layer_backward)
-        #     layer_backward = self._layers[i].backward(activation_backward)
-        #
-        # return activation_backward
+            i -=1
 
         #######################################################################
         #                       ** END OF YOUR CODE **
