@@ -98,6 +98,7 @@ class SigmoidLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
+
         self._cache_current = 1 / (1 + np.exp(-x))
         return self._cache_current
 
@@ -111,9 +112,8 @@ class SigmoidLayer(Layer):
         #######################################################################
 
         # derivative of sigmoid is equal to g(z) * [1 - g(z)]
-        # return grad_z * self._cache_current * (1 - self._cache_current)
-
         return grad_z * self._cache_current * (1 - self._cache_current)
+
         #######################################################################
         #                       ** END OF YOUR CODE **
         #######################################################################
@@ -144,9 +144,7 @@ class ReluLayer(Layer):
         #######################################################################
         # derivative of ReLU is equal to { 0 for z <= 0
         #                                { 1 for z > 0
-        # return grad_z * np.where(self._cache_current <= 0, 0, 1)
         return grad_z * np.where(self._cache_current <= 0, 0, 1)
-        #return np.multiply(grad_z, np.int64(self._cache_current > 0))
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -278,43 +276,18 @@ class MultiLayerNetwork(object):
 
         self._layers = []
 
-        # add first layer to the _layers array
+        # add first linear layer and activation layer to _layers array
         self._layers.append(LinearLayer(input_dim, neurons[0]))
         activation = self._the_activation(activations[0])
         if activation is not None:
             self._layers.append(activation)
 
-        # self.cache = np.empty(len(activations),dtype=np.ndarray)
-
-
-        # add the rest of the layers to the _layers array
-        # for i in range(1, len(activations)-1):
-        for i in range (len(neurons)-1):
+        # add the rest of the linear layers and activation layers to _layers
+        for i in range(len(neurons)-1):
             self._layers.append(LinearLayer(neurons[i], neurons[i+1]))
             activation = self._the_activation(activations[i+1])
             if activation is not None:
                 self._layers.append(activation)
-
-
-        # initialize empty 1-D array of the size of the activation functions
-        # self._layers = np.empty(len(activations), dtype=LinearLayer)
-        #
-        # # add first layer to the _layers array
-        # self._layers[0] = LinearLayer(input_dim, neurons[0])
-        # activation = self._the_activation(activations[0])
-        # if activation is not None:
-        #     self._layers.append(activation)
-        #
-        # # self.cache = np.empty(len(activations),dtype=np.ndarray)
-        #
-        #
-        # # add the rest of the layers to the _layers array
-        # for i in range(1, len(activations)):
-        #     self._layers[i] = LinearLayer(neurons[i - 1], neurons[i])
-        #     activation = self._the_activation(activations[i+1])
-        #     if activation is not None:
-        #         self._layers.append(activation)
-
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -354,26 +327,6 @@ class MultiLayerNetwork(object):
 
         return input_array
 
-        # run the first layer and activation output through the other layers
-        # for i in range(len(self.activations)):
-        #     layer_forward = self._layers[i].forward(input_array)
-        #
-        #     # perform activation according to the activation layer type
-        #     if self.activations[i] == "sigmoid":
-        #         input_array = SigmoidLayer().forward(layer_forward)
-        #         self.cache[i] = input_array
-        #     elif self.activations[i] == "relu":
-        #         input_array = ReluLayer().forward(layer_forward)
-        #         self.cache[i] = input_array
-        #     elif self.activations[i] == "identity":
-        #         input_array = layer_forward
-        #     else:
-        #         raise ValueError("Activation function not supported by the"
-        #                          "neural network mini-library")
-
-        #return input_array
-
-
         #######################################################################
         #                       ** END OF YOUR CODE **
         #######################################################################
@@ -401,22 +354,6 @@ class MultiLayerNetwork(object):
         while i >= 0:
             grad_z = self._layers[i].backward(grad_z)
             i -=1
-
-
-        # i = len(self._layers) - 1
-        # while i >= 0:
-        #     if self.activations[i] == "sigmoid":
-        #         grad_z = SigmoidLayer().backward(grad_z, self.cache[i])
-        #     elif self.activations[i] == "relu":
-        #         grad_z = ReluLayer().backward(grad_z, self.cache[i]);
-        #     elif self.activations[i] == "identity":
-        #         grad_z = grad_z
-        #     else:
-        #         raise ValueError("Activation function not supported by the"
-        #                              "neural network mini-library")
-        #     grad_z = self._layers[i].backward(grad_z)
-        #     i -= 1
-
 
         #######################################################################
         #                       ** END OF YOUR CODE **
