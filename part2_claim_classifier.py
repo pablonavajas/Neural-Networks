@@ -15,7 +15,8 @@ def linear_block(in_n, out_n):
     """
     return nn.Sequential(
             nn.Linear(in_n, out_n),
-            nn.ReLU()
+            #nn.ReLU()
+            nn.Tanh()
             )
 
 class ClaimClassifier(nn.Module):
@@ -219,16 +220,28 @@ class ClaimClassifier(nn.Module):
         You can use external libraries such as scikit-learn for this
         if necessary.
         """
-        #pass
-       
         #Calculate AUC-ROC graph and AUC metric
         fpr, tpr, thresholds = metrics.roc_curve(y_labels, y_predict)
-        print(fpr)
-        print(tpr)
-        print(thresholds)
+        #print(fpr)
+        #print(tpr)
+        #print(thresholds)
         auc = metrics.auc(fpr, tpr)
     
-        #Plot ROC-AUC 
+        #Calculate Precision, Recall and F1_Score
+        """
+        y_rounded = np.where(y_predict < 0.5, 0, 1)
+        print(y_rounded)
+        print(y_rounded.sum().item())
+        print(metrics.classification_report(y_labels, y_rounded, target_names = ['Class 0', 'Class 1']))
+        """
+
+        return auc, [fpr, tpr]
+
+    def plot_ROC_AUC(self, auc, fpr, tpr):
+        """
+        Plots the ROC_AUC curve.
+        """
+
         plt.figure()
         lw = 2
         plt.plot(fpr, tpr, color='darkorange',
@@ -241,9 +254,6 @@ class ClaimClassifier(nn.Module):
         plt.title('Receiver operating characteristic')
         plt.legend(loc="lower right")
         plt.show()
-
-        return auc
-
 
     def save_model(self):
         # Please alter this file appropriately to work in tandem with your
@@ -327,7 +337,7 @@ def main():
 
     #Create an instance of a classifier
     #Pass in the hidden layers as a list
-    hidden_layers = [4, 7, 3] #means we'll have 9 inputs, layer of 4, then 7, then 3, then output a 1
+    hidden_layers = [4, 5, 3] #means we'll have 9 inputs, layer of 4, then 7, then 3, then output a 1
     classifier = ClaimClassifier(hidden_layers = hidden_layers, batch_size = 100, num_epochs = 20, learning_rate = 0.001)
 
     #Debugging: print the architecture of the NN.
@@ -339,11 +349,15 @@ def main():
     #Test the model on the test data
     test_predicted_labels = classifier.predict(test_attributes)
 
+    #Debug
     print(test_predicted_labels)
 
     #Evaluate the performance of the architecture
-    z = classifier.evaluate_architecture(test_predicted_labels, test_labels)
-    print(z)
+    auc, [fpr, tpr] = classifier.evaluate_architecture(test_predicted_labels, test_labels)
+    print("AUC value is: ", auc)
+
+    #Plot the ROC_AUC curve
+    classifier.plot_ROC_AUC(auc, fpr, tpr)
 
 if __name__ == "__main__":
     main()
