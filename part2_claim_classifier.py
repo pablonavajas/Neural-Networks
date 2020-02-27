@@ -234,19 +234,31 @@ def ClaimClassifierHyperParameterSearch():
     max_accuracy = max(accuracies)
 
     #get the respective params of the max accuracy index
-    params = #to be completed (Iurie)
+    #params = #to be completed (Iurie)
 
     return params
 
 
 def main():
+    #Read in the data
     data = readData.Dataset("part2_training_data.csv")
+   
+    #Splitting off a training set and a test set from the data after randomisation
+    #90% training set, 10% test set
+    indices = np.random.permutation(data.attributes.shape[0])
+    split_point = (data.attributes.shape[0] * 9)//10
+    training_idx, test_idx = indices[:split_point], indices[split_point:]
+    training_attributes, test_attributes = data.attributes[training_idx], data.attributes[test_idx]
+    training_labels, test_labels = data.labels[training_idx], data.labels[test_idx]
 
+    #Create an instance of a classifier
     classifier = ClaimClassifier()
 
-    classifier.fit(data.attributes, data.labels)
-    arr = classifier.predict(data.attributes)
-    print(arr)
+    #Fit the model to the training data
+    classifier.fit(training_attributes, training_labels)
+
+    #Test the model on the test data
+    arr = classifier.predict(test_attributes)
 
 
 if __name__ == "__main__":
