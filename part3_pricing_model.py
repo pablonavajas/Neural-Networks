@@ -3,6 +3,11 @@ from sklearn.model_selection import train_test_split
 import pickle
 import numpy as np
 
+# External library to process categorical data
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+
 
 def fit_and_calibrate_classifier(classifier, X, y):
     # DO NOT ALTER THIS FUNCTION
@@ -63,7 +68,48 @@ class PricingModel():
         # =============================================================
         # YOUR CODE HERE
 
-        return  # YOUR CLEAN DATA AS A NUMPY ARRAY
+        """ must address cols: [0, 2, 5, 6, 7, 9, 12, 19, 20, 21, 25]
+
+
+        onehotencoder = OneHotEncoder(categorical_features=[0])
+
+        X = onehotencoder.fit_transform(X_encoded).toarray()
+
+
+        l1 = pd.read_csv("part3_training_data_short.csv")
+        """
+
+        # Ensure data is numpy array
+        if not (isinstance(X_raw, (np.ndarray))):
+            X_raw = X_raw.to_numpy()
+
+        
+        # Replace all missing values
+        # (will be 0 for numerical data and "missing value" for categorical data
+        imputer = SimpleImputer(missing_values = np.nan, strategy='constant')
+
+        imputer = imputer.fit(X_raw[:,1:])
+
+        X_raw[:, 1:] = imputer.transform(X_raw[:,1:])
+
+        
+        # Convert Categorical values into numerical data
+        label_coder = LabelEncoder()
+
+        for col in range(len(X_raw[0])):
+            if not (isinstance(X_raw[0][col], (int)) or isinstance(X_raw[0][col], (float))):
+
+                X_raw[:,col] = label_coder.fit_transform(X_raw[:,col])
+
+
+        # Convert data to a 1-hot format
+        col_trans = ColumnTransformer([('encoder', OneHotEncoder(), [0])], remainder='passthrough')
+        
+        X = np.array(col_trans.fit_transform(X_raw), dtype = np.str)
+
+        ##### Future warning ... could look into
+        
+        return X
 
     def fit(self, X_raw, y_raw, claims_raw):
         """Classifier training function.
@@ -120,6 +166,9 @@ class PricingModel():
         # REMEMBER TO A SIMILAR LINE TO THE FOLLOWING SOMEWHERE IN THE CODE
         # X_clean = self._preprocessor(X_raw)
 
+        X = self._preprocessor(X_raw)
+
+        prob = model(X)
 
         return  # return probabilities for the positive class (label 1)
 
