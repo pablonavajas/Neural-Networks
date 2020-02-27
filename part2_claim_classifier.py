@@ -9,45 +9,49 @@ from sklearn.model_selection import GridSearchCV
 from sklearn import metrics
 import matplotlib.pyplot as plt
 
+
 def linear_block(in_n, out_n):
     """
-    Used to construct the hidden layers in the architecture of the Neural Network 
+    Used to construct the hidden layers in the architecture of the Neural
+    Network
     """
     return nn.Sequential(
-            nn.Linear(in_n, out_n),
-            #nn.ReLU()
-            nn.Tanh()
-            )
+        nn.Linear(in_n, out_n),
+        # nn.ReLU()
+        nn.Tanh()
+    )
+
 
 class ClaimClassifier(nn.Module):
 
-#    def __init__(self):
-#        
-#        #Feel free to alter this as you wish, adding instance variables as
-#        #necessary. 
-#       
-#        super(ClaimClassifier, self).__init__()
-#        # Attributes
-#        self.batch_size = 100
-#        self.num_epochs = 20
-#        self.learning_rate = 0.001
-#
-#        # Model set-up
-#        self.layer1 = nn.Linear(9, 4)
-#        # self.ReLU = nn.ReLU()
-#        self.dropout = nn.Dropout()
-#        self.layer2 = nn.Linear(4, 1)
-#        self.sigmoid = nn.Sigmoid()
-#
-#    def forward(self, x):
-#        out = self.layer1(x)
-#        # out = self.ReLU(out)
-#        out = self.dropout(out)
-#        out = self.layer2(out)
-#        out = self.sigmoid(out)
-#        return out
+    #    def __init__(self):
+    #
+    #        #Feel free to alter this as you wish, adding instance variables as
+    #        #necessary.
+    #
+    #        super(ClaimClassifier, self).__init__()
+    #        # Attributes
+    #        self.batch_size = 100
+    #        self.num_epochs = 20
+    #        self.learning_rate = 0.001
+    #
+    #        # Model set-up
+    #        self.layer1 = nn.Linear(9, 4)
+    #        # self.ReLU = nn.ReLU()
+    #        self.dropout = nn.Dropout()
+    #        self.layer2 = nn.Linear(4, 1)
+    #        self.sigmoid = nn.Sigmoid()
+    #
+    #    def forward(self, x):
+    #        out = self.layer1(x)
+    #        # out = self.ReLU(out)
+    #        out = self.dropout(out)
+    #        out = self.layer2(out)
+    #        out = self.sigmoid(out)
+    #        return out
 
-    def __init__(self, hidden_layers, batch_size, num_epochs, learning_rate):
+    def __init__(self, hidden_layers=[4, 5, 3], batch_size=100, num_epochs=20,
+                 learning_rate=0.001):
         """
         Feel free to alter this as you wish, adding instance variables as
         necessary. 
@@ -62,22 +66,24 @@ class ClaimClassifier(nn.Module):
         self.learning_rate = learning_rate
 
         # Model set-up
-        #1) Passing hidden_layers as a list
+        # 1) Passing hidden_layers as a list
         self.layer_neurons = [9] + hidden_layers
-        linear_layers = [linear_block(in_f, out_f) 
-                            for in_f, out_f in zip(self.layer_neurons, self.layer_neurons[1:])]
+        linear_layers = [linear_block(in_f, out_f)
+                         for in_f, out_f in
+                         zip(self.layer_neurons, self.layer_neurons[1:])]
         self.encoder = nn.Sequential(*linear_layers)
 
-        #2) Output part
+        # 2) Output part
         self.decoder = nn.Sequential(
-                nn.Dropout(),
-                nn.Linear(self.layer_neurons[-1], 1),
-                nn.Sigmoid()
+            nn.Dropout(),
+            nn.Linear(self.layer_neurons[-1], 1),
+            nn.Sigmoid()
         )
 
     def forward(self, x):
         """
-        Override forward() method of nn.Module class to pass input through the neural network.
+        Override forward() method of nn.Module class to pass input through
+        the neural network.
         """
         out = self.encoder(x)
         out = self.decoder(out)
@@ -147,9 +153,9 @@ class ClaimClassifier(nn.Module):
                 X = torch.from_numpy(X)
                 y = torch.from_numpy(y)
 
-                #resize from 100 to (100,1)
-                y = y.view(-1,1)
-                
+                # resize from 100 to (100,1)
+                y = y.view(-1, 1)
+
                 # run forwards
                 outputs = self.forward(X)
                 loss = criterion(outputs, y)
@@ -161,16 +167,17 @@ class ClaimClassifier(nn.Module):
 
                 # track the accuracy
                 total = y.size(0)
-                #use first parameter from max function to get tensors of shape [100]
-                #for both the outputs and labels (converting from a 
-                #tensor of 1x100, each element being a list containing
-                #1 element)
+                # use first parameter from max function to get tensors of
+                # shape [100]
+                # for both the outputs and labels (converting from a
+                # tensor of 1x100, each element being a list containing
+                # 1 element)
                 output_values, predicted = torch.max(outputs.data, 1)
                 y_values, predicted_y = torch.max(y, 1)
 
-                #round the output probabilities in order to calculate accuracy
+                # round the output probabilities in order to calculate accuracy
                 rounded_output_values = torch.round(output_values)
-                
+
                 correct = (rounded_output_values == y_values).sum().item()
 
             print('Epoch [{}/{}], Loss: {:.4f}, Accuracy: {:.2f}%'
@@ -210,7 +217,7 @@ class ClaimClassifier(nn.Module):
 
         return arr
 
-    #def evaluate_architecture(self):
+    # def evaluate_architecture(self):
     def evaluate_architecture(self, y_predict, y_labels):
         """Architecture evaluation utility.
 
@@ -220,19 +227,20 @@ class ClaimClassifier(nn.Module):
         You can use external libraries such as scikit-learn for this
         if necessary.
         """
-        #Calculate AUC-ROC graph and AUC metric
+        # Calculate AUC-ROC graph and AUC metric
         fpr, tpr, thresholds = metrics.roc_curve(y_labels, y_predict)
-        #print(fpr)
-        #print(tpr)
-        #print(thresholds)
+        # print(fpr)
+        # print(tpr)
+        # print(thresholds)
         auc = metrics.auc(fpr, tpr)
-    
-        #Calculate Precision, Recall and F1_Score
+
+        # Calculate Precision, Recall and F1_Score
         """
         y_rounded = np.where(y_predict < 0.5, 0, 1)
         print(y_rounded)
         print(y_rounded.sum().item())
-        print(metrics.classification_report(y_labels, y_rounded, target_names = ['Class 0', 'Class 1']))
+        print(metrics.classification_report(y_labels, y_rounded, target_names 
+        = ['Class 0', 'Class 1']))
         """
 
         return auc, [fpr, tpr]
@@ -245,7 +253,7 @@ class ClaimClassifier(nn.Module):
         plt.figure()
         lw = 2
         plt.plot(fpr, tpr, color='darkorange',
-                lw=lw, label='ROC curve (area = %0.2f)' % auc)
+                 lw=lw, label='ROC curve (area = %0.2f)' % auc)
         plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
         plt.xlim([0.0, 1.0])
         plt.ylim([0.0, 1.05])
@@ -271,7 +279,7 @@ def load_model():
 
 
 # ENSURE TO ADD IN WHATEVER INPUTS YOU DEEM NECESSARRY TO THIS FUNCTION
-def ClaimClassifierHyperParameterSearch(attributes, labels):
+def ClaimClassifierHyperParameterSearch():
     """Performs a hyper-parameter for fine-tuning the classifier.
 
     Implement a function that performs a hyper-parameter search for your
@@ -288,75 +296,104 @@ def ClaimClassifierHyperParameterSearch(attributes, labels):
     # dropout
     # learning rate and momentum
 
+    # Read in the data
     data = readData.Dataset("part2_training_data.csv")
 
     # different options for hyperparameters
-    batch_size_arr = [50, 100, 200, 300, 400, 500]
-    num_epochs_arr = [10, 20, 30, 50]
-    optimizer_arr = ['SGD', 'Adam', 'RMSprop']
+    batch_size_arr = [50, 100]#, 200, 300, 400, 500]
+    num_epochs_arr = [10, 20]#, 30, 50, 75, 100]
+
+
+    # store batch_size and num_epochs
+    num_epochs_choices = []
+    auc_result = []
 
     # params passed into the constructor of ClaimClassifier()
     # hidden_layers, batch_size, num_epochs, learning_rate
+    for num_epochs in num_epochs_arr:
+        # Splitting off a training set and a test set from the data after
+        # randomisation
+        # 90% training set, 10% test set
+        indices = np.random.permutation(data.attributes.shape[0])
+        split_point = (data.attributes.shape[0] * 9) // 10
+        training_idx, test_idx = indices[:split_point], indices[
+                                                        split_point:]
+        training_attributes, test_attributes = data.attributes[
+                                                   training_idx], \
+                                               data.attributes[test_idx]
+        training_labels, test_labels = data.labels[training_idx], \
+                                       data.labels[
+                                           test_idx]
 
-    classifier = ClaimClassifier()
+        # Create an instance of a classifier
+        # Pass in the hidden layers as a list
+        hidden_layers = [4, 5, 3]  # means we'll have 9 inputs, layer of 4,
+        # then 7, then 3, then output a 1
+        classifier = ClaimClassifier(hidden_layers=hidden_layers,
+                                     batch_size=100,
+                                     num_epochs=num_epochs, learning_rate=0.001)
 
-    accuracies = []
-    params = []
+        # Fit the model to the training data
+        classifier.fit(training_attributes, training_labels)
 
-    for batch_size in batch_size_arr:
-        for num_epochs in num_epochs_arr:
-            for optimizer in optimizer_arr:
-                classifier = ClaimClassifier(batch_size, num_epochs, optimizer)
+        # Test the model on the test data
+        test_predicted_labels = classifier.predict(test_attributes)
 
-                #evaluate architecture should store self.accuracy,
-                # self.precision, self.f1score etc.
-                classifier.evaluate_architecture();
-                accuracies.append(classifier.accuracy)
-                params.append([batch_size, num_epochs, optimizer])
+        # Debug
+        print(test_predicted_labels)
 
-    #need to find index of max accuracies
-    max_accuracy = max(accuracies)
+        # Evaluate the performance of the architecture
+        auc, [fpr, tpr] = classifier.evaluate_architecture(
+            test_predicted_labels,
+            test_labels)
+        num_epochs_choices.append(num_epochs)
+        auc_result.append(auc)
 
-    #get the respective params of the max accuracy index
-    #params = #to be completed (Iurie)
+        #plot graph of batches vs auc
 
-    return params
+
 
 
 def main():
-    #Read in the data
+    # Read in the data
     data = readData.Dataset("part2_training_data.csv")
-   
-    #Splitting off a training set and a test set from the data after randomisation
-    #90% training set, 10% test set
+
+    # Splitting off a training set and a test set from the data after
+    # randomisation
+    # 90% training set, 10% test set
     indices = np.random.permutation(data.attributes.shape[0])
-    split_point = (data.attributes.shape[0] * 9)//10
+    split_point = (data.attributes.shape[0] * 9) // 10
     training_idx, test_idx = indices[:split_point], indices[split_point:]
-    training_attributes, test_attributes = data.attributes[training_idx], data.attributes[test_idx]
-    training_labels, test_labels = data.labels[training_idx], data.labels[test_idx]
+    training_attributes, test_attributes = data.attributes[training_idx], \
+                                           data.attributes[test_idx]
+    training_labels, test_labels = data.labels[training_idx], data.labels[
+        test_idx]
 
-    #Create an instance of a classifier
-    #Pass in the hidden layers as a list
-    hidden_layers = [4, 5, 3] #means we'll have 9 inputs, layer of 4, then 7, then 3, then output a 1
-    classifier = ClaimClassifier(hidden_layers = hidden_layers, batch_size = 100, num_epochs = 20, learning_rate = 0.001)
+    # Create an instance of a classifier
+    # Pass in the hidden layers as a list
+    hidden_layers = [4, 5, 3]  # means we'll have 9 inputs, layer of 4,
+    # then 7, then 3, then output a 1
+    classifier = ClaimClassifier(hidden_layers=hidden_layers, batch_size=100,
+                                 num_epochs=20, learning_rate=0.001)
 
-    #Debugging: print the architecture of the NN.
+    # Debugging: print the architecture of the NN.
     print(classifier)
 
-    #Fit the model to the training data
+    # Fit the model to the training data
     classifier.fit(training_attributes, training_labels)
 
-    #Test the model on the test data
+    # Test the model on the test data
     test_predicted_labels = classifier.predict(test_attributes)
 
-    #Debug
+    # Debug
     print(test_predicted_labels)
 
-    #Evaluate the performance of the architecture
-    auc, [fpr, tpr] = classifier.evaluate_architecture(test_predicted_labels, test_labels)
+    # Evaluate the performance of the architecture
+    auc, [fpr, tpr] = classifier.evaluate_architecture(test_predicted_labels,
+                                                       test_labels)
     print("AUC value is: ", auc)
 
-    #Plot the ROC_AUC curve
+    # Plot the ROC_AUC curve
     classifier.plot_ROC_AUC(auc, fpr, tpr)
 
 if __name__ == "__main__":
