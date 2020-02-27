@@ -65,6 +65,7 @@ class ClaimClassifier(nn.Module):
         self.batch_size = batch_size
         self.num_epochs = num_epochs
         self.learning_rate = learning_rate
+        self.losses = np.zeros(self.num_epochs, dtype = float)
 
         # Model set-up
         # 1) Passing hidden_layers as a list
@@ -188,7 +189,7 @@ class ClaimClassifier(nn.Module):
                   .format(epoch + 1, self.num_epochs, loss.item(),
                           (correct / total) * 100))
 
-            losses[epoch] = loss.item()
+            self.losses[epoch] = loss.item()
 
         # Debug
         print(losses)
@@ -281,10 +282,11 @@ class ClaimClassifier(nn.Module):
         y-axis.
         """
 
-        x = np.arange(1, num_epochs + 1)
-        y = losses[x - 1]
-        plt.title("Loss vs nr of epochs")
-        plt.xlabel("Number of epochs")
+        x = np.arange(1,num_epochs+1)
+        y = losses[x-1]
+        plt.title("Loss vs Number of Epochs")
+        plt.xlabel("Number of Epochs")
+        plt.xticks(x)
         plt.ylabel("Loss")
         plt.plot(x, y)
         plt.show()
@@ -378,6 +380,9 @@ def main():
     classifier.plot_ROC_AUC(auc, fpr, tpr)
     ClaimClassifierHyperParameterSearch()
 
+
+    # Plot the epochs-loss curve
+    classifier.plot_epochs_loss(classifier.num_epochs, classifier.losses)
 
 if __name__ == "__main__":
     main()
