@@ -6,6 +6,8 @@ import torch.optim as optim
 import readData
 import math
 from sklearn.model_selection import GridSearchCV
+from sklearn import metrics
+import matplotlib.pyplot as plt
 
 def linear_block(in_n, out_n):
     """
@@ -200,14 +202,15 @@ class ClaimClassifier(nn.Module):
         X = torch.from_numpy(X_clean)
         outputs = self.forward(X)
 
-        # create a (rx1 numpy array; here r = 20000)
+        # create a (rx1 numpy array; here r = 2000)
         arr = outputs.data.numpy()
         arr = [x[0] for x in arr]
         arr = np.array(arr)
 
         return arr
 
-    def evaluate_architecture(self):
+    #def evaluate_architecture(self):
+    def evaluate_architecture(self, y_predict, y_labels):
         """Architecture evaluation utility.
 
         Populate this function with evaluation utilities for your
@@ -216,7 +219,31 @@ class ClaimClassifier(nn.Module):
         You can use external libraries such as scikit-learn for this
         if necessary.
         """
-        pass
+        #pass
+       
+        #Calculate AUC-ROC graph and AUC metric
+        fpr, tpr, thresholds = metrics.roc_curve(y_labels, y_predict)
+        print(fpr)
+        print(tpr)
+        print(thresholds)
+        auc = metrics.auc(fpr, tpr)
+    
+        #Plot ROC-AUC 
+        plt.figure()
+        lw = 2
+        plt.plot(fpr, tpr, color='darkorange',
+                lw=lw, label='ROC curve (area = %0.2f)' % auc)
+        plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver operating characteristic')
+        plt.legend(loc="lower right")
+        plt.show()
+
+        return auc
+
 
     def save_model(self):
         # Please alter this file appropriately to work in tandem with your
@@ -307,9 +334,13 @@ def main():
     classifier.fit(training_attributes, training_labels)
 
     #Test the model on the test data
-    arr = classifier.predict(test_attributes)
+    test_predicted_labels = classifier.predict(test_attributes)
 
-    print(arr)
+    print(test_predicted_labels)
+
+    #Evaluate the performance of the architecture
+    z = classifier.evaluate_architecture(test_predicted_labels, test_labels)
+    print(z)
 
 if __name__ == "__main__":
     main()
