@@ -297,7 +297,7 @@ def main():
 
     #Create an instance of a classifier
     #Pass in the hidden layers as a list
-    hidden_layers = [4, 7, 3]
+    hidden_layers = [4, 7, 3] #means we'll have 9 inputs, layer of 4, then 7, then 3, then output a 1
     classifier = ClaimClassifier(hidden_layers = hidden_layers, batch_size = 100, num_epochs = 20, learning_rate = 0.001)
 
     #Debugging: print the architecture of the NN.
