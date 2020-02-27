@@ -7,33 +7,77 @@ import readData
 import math
 from sklearn.model_selection import GridSearchCV
 
+def linear_block(in_n, out_n):
+    """
+    Used to construct the hidden layers in the architecture of the Neural Network 
+    """
+    return nn.Sequential(
+            nn.Linear(in_n, out_n),
+            nn.ReLU()
+            )
 
 class ClaimClassifier(nn.Module):
 
-    def __init__(self):
+#    def __init__(self):
+#        
+#        #Feel free to alter this as you wish, adding instance variables as
+#        #necessary. 
+#       
+#        super(ClaimClassifier, self).__init__()
+#        # Attributes
+#        self.batch_size = 100
+#        self.num_epochs = 20
+#        self.learning_rate = 0.001
+#
+#        # Model set-up
+#        self.layer1 = nn.Linear(9, 4)
+#        # self.ReLU = nn.ReLU()
+#        self.dropout = nn.Dropout()
+#        self.layer2 = nn.Linear(4, 1)
+#        self.sigmoid = nn.Sigmoid()
+#
+#    def forward(self, x):
+#        out = self.layer1(x)
+#        # out = self.ReLU(out)
+#        out = self.dropout(out)
+#        out = self.layer2(out)
+#        out = self.sigmoid(out)
+#        return out
+
+    def __init__(self, hidden_layers, batch_size, num_epochs, learning_rate):
         """
         Feel free to alter this as you wish, adding instance variables as
         necessary. 
+
+        hidden_layers is a list of the number of neurons per layer
         """
         super(ClaimClassifier, self).__init__()
+
         # Attributes
-        self.batch_size = 100
-        self.num_epochs = 20
-        self.learning_rate = 0.001
+        self.batch_size = batch_size
+        self.num_epochs = num_epochs
+        self.learning_rate = learning_rate
 
         # Model set-up
-        self.layer1 = nn.Linear(9, 4)
-        # self.ReLU = nn.ReLU()
-        self.dropout = nn.Dropout()
-        self.layer2 = nn.Linear(4, 1)
-        self.sigmoid = nn.Sigmoid()
+        #1) Passing hidden_layers as a list
+        self.layer_neurons = [9] + hidden_layers
+        linear_layers = [linear_block(in_f, out_f) 
+                            for in_f, out_f in zip(self.layer_neurons, self.layer_neurons[1:])]
+        self.encoder = nn.Sequential(*linear_layers)
+
+        #2) Output part
+        self.decoder = nn.Sequential(
+                nn.Dropout(),
+                nn.Linear(self.layer_neurons[-1], 1),
+                nn.Sigmoid()
+        )
 
     def forward(self, x):
-        out = self.layer1(x)
-        # out = self.ReLU(out)
-        out = self.dropout(out)
-        out = self.layer2(out)
-        out = self.sigmoid(out)
+        """
+        Override forward() method of nn.Module class to pass input through the neural network.
+        """
+        out = self.encoder(x)
+        out = self.decoder(out)
         return out
 
     def _preprocessor(self, X_raw):
@@ -252,7 +296,12 @@ def main():
     training_labels, test_labels = data.labels[training_idx], data.labels[test_idx]
 
     #Create an instance of a classifier
-    classifier = ClaimClassifier()
+    #Pass in the hidden layers as a list
+    hidden_layers = [4, 7, 3]
+    classifier = ClaimClassifier(hidden_layers = hidden_layers, batch_size = 100, num_epochs = 20, learning_rate = 0.001)
+
+    #Debugging: print the architecture of the NN.
+    print(classifier)
 
     #Fit the model to the training data
     classifier.fit(training_attributes, training_labels)
@@ -260,6 +309,7 @@ def main():
     #Test the model on the test data
     arr = classifier.predict(test_attributes)
 
+    print(arr)
 
 if __name__ == "__main__":
     main()
