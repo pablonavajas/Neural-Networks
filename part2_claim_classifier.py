@@ -8,6 +8,7 @@ import math
 from sklearn.model_selection import GridSearchCV
 from sklearn import metrics
 import matplotlib.pyplot as plt
+import eval_plots
 
 
 def linear_block(in_n, out_n):
@@ -141,8 +142,8 @@ class ClaimClassifier(nn.Module):
         # Binary Cross Entropy
         criterion = nn.BCELoss()
 
-        #Array of losses to be used for plotting
-        losses = np.zeros(self.num_epochs, dtype = float)
+        # Array of losses to be used for plotting
+        losses = np.zeros(self.num_epochs, dtype=float)
 
         for epoch in range(self.num_epochs):
             indices = np.random.permutation(X_raw.shape[0])
@@ -189,11 +190,11 @@ class ClaimClassifier(nn.Module):
 
             losses[epoch] = loss.item()
 
-        #Debug
+        # Debug
         print(losses)
-        
-        #Plot the epochs-loss curve
-        self.plot_epochs_loss(self.num_epochs, losses)
+
+        # Plot the epochs-loss curve
+        # self.plot_epochs_loss(self.num_epochs, losses)
 
         return self
 
@@ -276,15 +277,16 @@ class ClaimClassifier(nn.Module):
 
     def plot_epochs_loss(self, num_epochs, losses):
         """
-        Plots the epochs on the x-axis, the value of the loss function on the y-axis.
+        Plots the epochs on the x-axis, the value of the loss function on the
+        y-axis.
         """
 
-        x = np.arange(1,num_epochs+1) 
-        y = losses[x-1]
+        x = np.arange(1, num_epochs + 1)
+        y = losses[x - 1]
         plt.title("Loss vs nr of epochs")
         plt.xlabel("Number of epochs")
         plt.ylabel("Loss")
-        plt.plot(x,y) 
+        plt.plot(x, y)
         plt.show()
 
     def save_model(self):
@@ -300,6 +302,11 @@ def load_model():
     with open('part2_claim_classifier.pickle', 'rb') as target:
         trained_model = pickle.load(target)
     return trained_model
+
+
+############################################################
+#           HELPERS FOR HYPERPARAM TUNING                  #
+############################################################
 
 
 # ENSURE TO ADD IN WHATEVER INPUTS YOU DEEM NECESSARRY TO THIS FUNCTION
@@ -320,62 +327,12 @@ def ClaimClassifierHyperParameterSearch():
     # dropout
     # learning rate and momentum
 
-    # Read in the data
-    data = readData.Dataset("part2_training_data.csv")
-
     # different options for hyperparameters
-    batch_size_arr = [50, 100]#, 200, 300, 400, 500]
-    num_epochs_arr = [10, 20]#, 30, 50, 75, 100]
+    num_epochs_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    eval_plots.plot_AUC_num_epochs_chosen(num_epochs_arr, [9, 8, 6, 3])
 
-
-    # store batch_size and num_epochs
-    num_epochs_choices = []
-    auc_result = []
-
-    # params passed into the constructor of ClaimClassifier()
-    # hidden_layers, batch_size, num_epochs, learning_rate
-    for num_epochs in num_epochs_arr:
-        # Splitting off a training set and a test set from the data after
-        # randomisation
-        # 90% training set, 10% test set
-        indices = np.random.permutation(data.attributes.shape[0])
-        split_point = (data.attributes.shape[0] * 9) // 10
-        training_idx, test_idx = indices[:split_point], indices[
-                                                        split_point:]
-        training_attributes, test_attributes = data.attributes[
-                                                   training_idx], \
-                                               data.attributes[test_idx]
-        training_labels, test_labels = data.labels[training_idx], \
-                                       data.labels[
-                                           test_idx]
-
-        # Create an instance of a classifier
-        # Pass in the hidden layers as a list
-        hidden_layers = [4, 5, 3]  # means we'll have 9 inputs, layer of 4,
-        # then 7, then 3, then output a 1
-        classifier = ClaimClassifier(hidden_layers=hidden_layers,
-                                     batch_size=100,
-                                     num_epochs=num_epochs, learning_rate=0.001)
-
-        # Fit the model to the training data
-        classifier.fit(training_attributes, training_labels)
-
-        # Test the model on the test data
-        test_predicted_labels = classifier.predict(test_attributes)
-
-        # Debug
-        print(test_predicted_labels)
-
-        # Evaluate the performance of the architecture
-        auc, [fpr, tpr] = classifier.evaluate_architecture(
-            test_predicted_labels,
-            test_labels)
-        num_epochs_choices.append(num_epochs)
-        auc_result.append(auc)
-
-        #plot graph of batches vs auc
-
-
+    num_batches_arr = [50, 100, 150, 200, 250, 300, 350, 400]
+    eval_plots.plot_AUC_batch_size(num_batches_arr, [9, 8, 6, 3])
 
 
 def main():
@@ -419,6 +376,8 @@ def main():
 
     # Plot the ROC_AUC curve
     classifier.plot_ROC_AUC(auc, fpr, tpr)
+    ClaimClassifierHyperParameterSearch()
+
 
 if __name__ == "__main__":
     main()
