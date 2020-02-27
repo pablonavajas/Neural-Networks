@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 import readData
 import math
+from sklearn.model_selection import GridSearchCV
 
 
 class ClaimClassifier(nn.Module):
@@ -15,21 +16,21 @@ class ClaimClassifier(nn.Module):
         necessary. 
         """
         super(ClaimClassifier, self).__init__()
-        #Attributes
+        # Attributes
         self.batch_size = 100
         self.num_epochs = 20
         self.learning_rate = 0.001
-    
-        #Model set-up
-        self.layer1 = nn.Linear(9,4)
-        #self.ReLU = nn.ReLU()
+
+        # Model set-up
+        self.layer1 = nn.Linear(9, 4)
+        # self.ReLU = nn.ReLU()
         self.dropout = nn.Dropout()
-        self.layer2 = nn.Linear(4,1)
+        self.layer2 = nn.Linear(4, 1)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
         out = self.layer1(x)
-        #out = self.ReLU(out)
+        # out = self.ReLU(out)
         out = self.dropout(out)
         out = self.layer2(out)
         out = self.sigmoid(out)
@@ -84,7 +85,7 @@ class ClaimClassifier(nn.Module):
         nr_batches = math.ceil(X_raw.shape[0] / self.batch_size)
 
         optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
-        #Binary Cross Entropy
+        # Binary Cross Entropy
         criterion = nn.BCELoss()
 
         for epoch in range(self.num_epochs):
@@ -143,7 +144,7 @@ class ClaimClassifier(nn.Module):
         X = torch.from_numpy(X_clean)
         outputs = self.forward(X)
 
-        #create a (rx1 numpy array; here r = 20000)
+        # create a (rx1 numpy array; here r = 20000)
         arr = outputs.data.numpy()
         arr = [x[0] for x in arr]
         arr = np.array(arr)
@@ -181,12 +182,50 @@ def ClaimClassifierHyperParameterSearch():
     """Performs a hyper-parameter for fine-tuning the classifier.
 
     Implement a function that performs a hyper-parameter search for your
-    architecture as implemented in the ClaimClassifier class. 
+    architecture as implemented in the ClaimClassifier class.
 
     The function should return your optimised hyper-parameters. 
     """
+    # -------- possible hyperparameters ------------
+    # batch size, num_epochs
+    # a 1-D array of nr_neurons in each layer
+    # a 1-D array of activation functions for each layer
+    # a 1-D array of 1s or 0s indicating presence of dropout function
+    # optimization function
+    # dropout
+    # learning rate and momentum
 
-    return  # Return the chosen hyper parameters
+    data = readData.Dataset("part2_training_data.csv")
+    classifier = ClaimClassifier()
+
+    # different options for hyperparameters
+    batch_size = [50, 100, 200, 300, 400, 500]
+    num_epochs = [10, 20, 30, 50]
+    optimizer = ['SGD', 'Adam', 'RMSprop']
+    # other optimizers ['Adagrad', 'Adadelta',  'Adamax','Nadam']
+
+    # create dictionary with all possible parameters
+    param_grid = dict(batch_size=batch_size, num_epochs=num_epochs,
+                      optimizer=optimizer)
+
+    # n_jobs=-1 (means using all processors in parallel for faster computation)
+    # cv is cross-validation splitting strategy (10 folds)
+    grid = GridSearchCV(estimator=classifier, param_grid=param_grid, n_jobs=-1,
+                        cv=10)
+
+    # train and fit the model (using cross_validation)
+    grid_result = grid.fit(data.attributes, data.labels)
+
+    # summarize results (best score is accuracy by default)
+    print("Best: %f using %s" % (
+        grid_result.best_score_, grid_result.best_params_))
+    means = grid_result.cv_results_['mean_test_score']
+    stds = grid_result.cv_results_['std_test_score']
+    params = grid_result.cv_results_['params']
+    for mean, stdev, param in zip(means, stds, params):
+        print("%f (%f) with: %r" % (mean, stdev, param))
+
+    return params
 
 
 def main():
