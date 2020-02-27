@@ -234,7 +234,7 @@ def load_model():
 
 
 # ENSURE TO ADD IN WHATEVER INPUTS YOU DEEM NECESSARRY TO THIS FUNCTION
-def ClaimClassifierHyperParameterSearch():
+def ClaimClassifierHyperParameterSearch(attributes, labels):
     """Performs a hyper-parameter for fine-tuning the classifier.
 
     Implement a function that performs a hyper-parameter search for your
@@ -257,6 +257,9 @@ def ClaimClassifierHyperParameterSearch():
     batch_size_arr = [50, 100, 200, 300, 400, 500]
     num_epochs_arr = [10, 20, 30, 50]
     optimizer_arr = ['SGD', 'Adam', 'RMSprop']
+
+    # params passed into the constructor of ClaimClassifier()
+    # hidden_layers, batch_size, num_epochs, learning_rate
 
     classifier = ClaimClassifier()
 
