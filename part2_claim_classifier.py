@@ -18,9 +18,9 @@ def linear_block(in_n, out_n):
     """
     return nn.Sequential(
         nn.Linear(in_n, out_n),
-        #nn.ReLU(),
-        nn.Tanh(),
-        nn.Dropout(0.5)
+        nn.ReLU()
+        #nn.Tanh(),
+        #nn.Dropout(0.5)
     )
 
 
@@ -420,10 +420,10 @@ def main():
 
     #hidden_layers = [9, 6, 4, 3]
     #hidden_layers = [8, 8, 6, 3]
-    hidden_layers = [10,20]
+    hidden_layers = [10]
 
     classifier = ClaimClassifier(hidden_layers=hidden_layers, batch_size=100,
-                                 num_epochs=100, learning_rate=0.0001)
+                                 num_epochs=100, learning_rate=0.001)
 
     classifier.fit(train_att, train_lab, valid_att, valid_lab)
 
