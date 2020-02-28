@@ -40,7 +40,7 @@ def balance_and_split_into_train_valid_test(filename):
     indices = np.random.permutation(original_n)
     data.attributes = data.attributes[indices]
     data.labels = data.labels[indices]
-
+    """
     unique_labels, count = np.unique(data.labels, return_counts=True)
 
     zeros = np.where(data.labels==0)
@@ -66,10 +66,11 @@ def balance_and_split_into_train_valid_test(filename):
 
     unique_labels, count = np.unique(data.labels, return_counts=True)
     print(unique_labels)
-
+   
     indices = np.random.permutation(data.attributes.shape[0])
     data.attributes = data.attributes[indices]
     data.labels = data.labels[indices]
+     """
 
     split_point1 = (data.attributes.shape[0] * 8) // 10
     split_point2 = (data.attributes.shape[0] * 9) // 10

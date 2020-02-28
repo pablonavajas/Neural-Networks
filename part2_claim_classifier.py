@@ -18,7 +18,7 @@ def linear_block(in_n, out_n):
     """
     return nn.Sequential(
         nn.Linear(in_n, out_n),
-        # nn.ReLU()
+        #nn.ReLU()
         nn.Tanh()
     )
 
@@ -325,8 +325,8 @@ def main():
     print(test_lab.shape)
 
 
-    #hidden_layers = [8, 6, 4, 3]
-    hidden_layers = [5, 4]
+    hidden_layers = [9, 6, 4, 3]
+    #hidden_layers = [5]
     classifier = ClaimClassifier(hidden_layers=hidden_layers, batch_size=100,
                                  num_epochs=100, learning_rate=0.001)
 
