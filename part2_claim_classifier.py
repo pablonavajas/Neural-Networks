@@ -19,7 +19,8 @@ def linear_block(in_n, out_n):
     return nn.Sequential(
         nn.Linear(in_n, out_n),
         #nn.ReLU()
-        nn.Tanh()
+        nn.Tanh(),
+        nn.Dropout(0.2)
     )
 
 
@@ -38,7 +39,8 @@ class ClaimClassifier(nn.Module):
         self.batch_size = batch_size
         self.num_epochs = num_epochs
         self.learning_rate = learning_rate
-        self.losses = np.zeros(self.num_epochs, dtype = float)
+        self.losses = np.zeros(self.num_epochs, dtype=float)
+        self.valid_losses = np.zeros(self.num_epochs, dtype=float)
 
         # Model set-up
         # 1) Passing hidden_layers as a list
@@ -50,7 +52,7 @@ class ClaimClassifier(nn.Module):
 
         # 2) Output part
         self.decoder = nn.Sequential(
-            nn.Dropout(),
+            #nn.Dropout(0.2),
             nn.Linear(self.layer_neurons[-1], 1),
             nn.Sigmoid()
         )
@@ -60,6 +62,8 @@ class ClaimClassifier(nn.Module):
         Override forward() method of nn.Module class to pass input through
         the neural network.
         """
+        #print(x)
+        #print(x.shape)
         out = self.encoder(x)
         out = self.decoder(out)
         return out
@@ -89,7 +93,9 @@ class ClaimClassifier(nn.Module):
 
         return Z
 
-    def fit(self, X_raw, y_raw):
+    def fit(self, X_raw, y_raw, X_valid, y_valid ):
+        #raw is the training set
+        #valid is the validation set
         """Classifier training function.
 
         Here you will implement the training function for your classifier.
@@ -107,8 +113,13 @@ class ClaimClassifier(nn.Module):
             an instance of the fitted model
         """
 
+        ################
+        # training
+        ################
+
         # Preprocess the data
         X_clean = self._preprocessor(X_raw)
+        X_valid_clean = self._preprocessor(X_valid)
 
         nr_batches = math.ceil(X_raw.shape[0] / self.batch_size)
 
@@ -168,6 +179,20 @@ class ClaimClassifier(nn.Module):
             avg_loss = sum(losses_arr)/len(losses_arr)
 
             self.losses[epoch] = avg_loss
+
+            ######################
+            # validate the model #
+            ######################
+            self.eval()  # prep model for evaluation
+            X_valid_clean = X_valid_clean.astype(np.float32)
+            y_valid = y_valid.astype(np.float32)
+            X_valid_clean_t = torch.from_numpy(X_valid_clean)
+            y_valid_clean_t = torch.from_numpy(y_valid)
+            y_valid_clean_t = y_valid_clean_t.view(-1, 1)
+            outputs = self.forward(X_valid_clean_t)
+            loss = criterion(outputs, y_valid_clean_t)
+
+            self.valid_losses[epoch] = loss.item()
 
 
         # Debug
@@ -255,20 +280,40 @@ class ClaimClassifier(nn.Module):
         plt.legend(loc="lower right")
         plt.show()
 
-    def plot_epochs_loss(self, num_epochs, losses):
+    def plot_epochs_loss(self, num_epochs, losses, valid_losses):
         """
         Plots the epochs on the x-axis, the value of the loss function on the
         y-axis.
         """
+        # visualize the loss as the network trained
+        fig = plt.figure(figsize=(10, 8))
+        plt.plot(range(1, num_epochs+1), losses,
+                 label='Training Loss')
+        plt.plot(range(1, num_epochs+1), valid_losses,
+                 label='Validation Loss')
 
-        x = np.arange(1,num_epochs+1)
-        y = losses[x-1]
-        plt.title("Loss vs Number of Epochs")
-        plt.xlabel("Number of Epochs")
-        plt.xticks(x)
-        plt.ylabel("Loss")
-        plt.plot(x, y)
+        # find position of lowest validation loss
+        idx = np.argwhere(np.diff(np.sign(valid_losses-losses))).flatten ()
+        plt.plot(np.arange(1, num_epochs+1)[idx], valid_losses[idx], 'ro')
+        #minposs = (np.where(valid_losses == np.amin(valid_losses))[0])[0] + 1
+
+        intersections_points = np.arange(1, num_epochs+1)[idx]
+        print(intersections_points)
+        if intersections_points.size != 0:
+           intersection_point = intersections_points[0]
+           print(intersection_point)
+           plt.axvline(intersection_point, linestyle='--', color='r',
+                      label='Early Stopping Checkpoint')
+
+        plt.xlabel('epochs')
+        plt.ylabel('loss')
+        plt.ylim(0, 0.5)  # consistent scale
+        plt.xlim(0, num_epochs + 1)  # consistent scale
+        plt.grid(True)
+        plt.legend()
+        plt.tight_layout()
         plt.show()
+        fig.savefig('loss_plot.png', bbox_inches='tight')
 
     def save_model(self):
         # Please alter this file appropriately to work in tandem with your
@@ -330,12 +375,13 @@ def main():
     print(test_lab.shape)
 
 
-    hidden_layers = [9, 6, 4, 3]
+    #hidden_layers = [9, 6, 4, 3]
+    hidden_layers = [8, 8, 6, 3]
     #hidden_layers = [5]
     classifier = ClaimClassifier(hidden_layers=hidden_layers, batch_size=100,
-                                 num_epochs=100, learning_rate=0.001)
+                                 num_epochs=100, learning_rate=0.0001)
 
-    classifier.fit(train_att, train_lab)
+    classifier.fit(train_att, train_lab, valid_att, valid_lab)
 
     test_predicted_labels = classifier.predict(test_att)
 
@@ -354,7 +400,7 @@ def main():
     # ClaimClassifierHyperParameterSearch()
 
     # Plot the epochs-loss curve
-    classifier.plot_epochs_loss(classifier.num_epochs, classifier.losses)
+    classifier.plot_epochs_loss(classifier.num_epochs, classifier.losses, classifier.valid_losses)
 
 
     """
