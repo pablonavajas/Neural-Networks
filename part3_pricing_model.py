@@ -68,15 +68,10 @@ class PricingModel():
         # =============================================================
         # YOUR CODE HERE
 
-        """ must address cols: [0, 2, 5, 6, 7, 9, 12, 19, 20, 21, 25]
+        """ 
+        Previous step: l1 = pd.read_csv("part3_training_data_short.csv")
 
-
-        onehotencoder = OneHotEncoder(categorical_features=[0])
-
-        X = onehotencoder.fit_transform(X_encoded).toarray()
-
-
-        l1 = pd.read_csv("part3_training_data_short.csv")
+        Label encoder: must address cols: [0, 2, 5, 6, 7, 9, 12, 19, 20, 21, 25]
         """
 
         # Ensure data is numpy array
@@ -98,16 +93,16 @@ class PricingModel():
 
         for col in range(len(X_raw[0])):
             if not (isinstance(X_raw[0][col], (int)) or isinstance(X_raw[0][col], (float))):
-
                 X_raw[:,col] = label_coder.fit_transform(X_raw[:,col])
 
 
         # Convert data to a 1-hot format
-        col_trans = ColumnTransformer([('encoder', OneHotEncoder(), [0])], remainder='passthrough')
+        col_trans = ColumnTransformer([('encoder', OneHotEncoder(categories='auto'), [0])],
+                                      remainder='passthrough')
         
         X = np.array(col_trans.fit_transform(X_raw), dtype = np.str)
 
-        ##### Future warning ... could look into
+        ##### Future warning ... solved by OneHotEncoder(categories='auto')
         
         return X
 
@@ -134,7 +129,7 @@ class PricingModel():
         nnz = np.where(claims_raw != 0)[0]
         self.y_mean = np.mean(claims_raw[nnz])
         # =============================================================
-        # REMEMBER TO A SIMILAR LINE TO THE FOLLOWING SOMEWHERE IN THE CODE
+        # REMEMBER TO HAVE A SIMILAR LINE TO THE FOLLOWING SOMEWHERE IN THE CODE
         X_clean = self._preprocessor(X_raw)
 
         # THE FOLLOWING GETS CALLED IF YOU WISH TO CALIBRATE YOUR PROBABILITES
@@ -168,9 +163,11 @@ class PricingModel():
 
         X = self._preprocessor(X_raw)
 
+        model = 
+        
         prob = model(X)
 
-        return  # return probabilities for the positive class (label 1)
+        return  prob # return probabilities for the positive class (label 1)
 
     def predict_premium(self, X_raw):
         """Predicts premiums based on the pricing model.
@@ -192,6 +189,8 @@ class PricingModel():
         # =============================================================
         # REMEMBER TO INCLUDE ANY PRICING STRATEGY HERE.
         # For example you could scale all your prices down by a factor
+
+        
 
         return self.predict_claim_probability(X_raw) * self.y_mean
 
