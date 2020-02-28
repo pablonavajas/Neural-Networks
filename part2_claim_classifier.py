@@ -20,7 +20,7 @@ def linear_block(in_n, out_n):
         nn.Linear(in_n, out_n),
         #nn.ReLU(),
         nn.Tanh(),
-        nn.Dropout(0.2)
+        nn.Dropout(0.5)
     )
 
 
@@ -278,6 +278,7 @@ class ClaimClassifier(nn.Module):
         plt.ylabel('True Positive Rate')
         plt.title('Receiver operating characteristic')
         plt.legend(loc="lower right")
+        plt.savefig('./images/auc_plot.png', bbox_inches='tight')
         plt.show()
 
     def plot_epochs_loss(self, num_epochs, losses, valid_losses):
@@ -294,8 +295,6 @@ class ClaimClassifier(nn.Module):
 
         # find position of lowest validation loss
         idx = np.argwhere(np.diff(np.sign(valid_losses-losses))).flatten ()
-        plt.plot(np.arange(1, num_epochs+1)[idx], valid_losses[idx], 'ro')
-        #minposs = (np.where(valid_losses == np.amin(valid_losses))[0])[0] + 1
 
         intersections_points = np.arange(1, num_epochs+1)[idx]
         print(intersections_points)
@@ -303,7 +302,7 @@ class ClaimClassifier(nn.Module):
            intersection_point = intersections_points[0]
            print(intersection_point)
            plt.axvline(intersection_point, linestyle='--', color='r',
-                      label='Early Stopping Checkpoint')
+                      label='Intersection of Validation and Training')
 
         plt.xlabel('epochs')
         plt.ylabel('loss')
@@ -312,14 +311,58 @@ class ClaimClassifier(nn.Module):
         plt.grid(True)
         plt.legend()
         plt.tight_layout()
+        plt.savefig('./images/loss_plot.png', bbox_inches='tight')
         plt.show()
-        fig.savefig('loss_plot.png', bbox_inches='tight')
+
+    def print_confusion_matrix(self, labels, predicted):
+        print(max(predicted))
+        predicted = np.where(predicted < 0.5, 0, 1)
+
+        assert len(labels) == len(predicted)
+        cm = metrics.confusion_matrix(labels, predicted)
+
+        print(cm)
+
+        fig = plt.figure(figsize=(8, 8))
+        ax = fig.add_subplot(111)
+        cax = ax.matshow(cm, cmap=plt.cm.Blues)
+        fig.colorbar(cax, fraction=0.046, pad=0.04)
+        ax.grid(False)
+
+
+        # annotate with exact numbers in boxes
+        for i in range(len(cm)):
+            for j in range(len(cm)):
+                plt.annotate(cm[i, j], xy=(j, i),
+                             horizontalalignment='center',
+                             verticalalignment='center',
+                             size=25, color='orange')
+
+        #plt.show()
+        # ax.xaxis.tick_top()
+        ax.tick_params(axis='both', labelsize=13)
+        # ax.set_yticks(range(len(labels)), minor=False)
+        # ax.set_xticks(range(len(labels)), minor=False)
+        # ax.set_xticklabels(labels, minor=False, rotation=45, ha='left')
+        # ax.set_yticklabels(predicted, minor=False)
+        plt.xlabel('Predicted Label', fontsize=18, labelpad=30)
+        plt.ylabel('True Label', fontsize=18)
+        #ax.set_ylim(10 - 0.5, -0.5)
+        plt.rcParams["axes.edgecolor"] = "0.6"
+        plt.rcParams["axes.grid"] = False
+
+        plt.title("Confusion Matrix Plot", pad=50, fontdict={'fontsize': 20})
+        plt.savefig('./images/matrix_plot.png')
+        plt.show()
 
     def save_model(self):
         # Please alter this file appropriately to work in tandem with your
         # load_model function below
         with open('part2_claim_classifier.pickle', 'wb') as target:
             pickle.dump(self, target)
+
+
+
 
 
 def load_model():
@@ -376,8 +419,9 @@ def main():
 
 
     #hidden_layers = [9, 6, 4, 3]
-    hidden_layers = [8, 8, 6, 3]
-    #hidden_layers = [5]
+    #hidden_layers = [8, 8, 6, 3]
+    hidden_layers = [10,20]
+
     classifier = ClaimClassifier(hidden_layers=hidden_layers, batch_size=100,
                                  num_epochs=100, learning_rate=0.0001)
 
@@ -387,6 +431,7 @@ def main():
 
     print(test_predicted_labels.shape)
     print(test_lab)
+    classifier.print_confusion_matrix(test_lab, test_predicted_labels)
 
     auc, [fpr, tpr] = classifier.evaluate_architecture(test_predicted_labels,
                                                        test_lab)
