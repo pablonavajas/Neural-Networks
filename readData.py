@@ -30,7 +30,6 @@ class Dataset:
 
         return L, J
 
-
 # function to split the data into train, validation and test sets
 def balance_and_split_into_train_valid_test(filename):
     # Read in the data
@@ -53,10 +52,10 @@ def balance_and_split_into_train_valid_test(filename):
     zero_lab = data.labels[zeros]
     one_lab = data.labels[ones]
 
-    # print(zero_att.shape)
-    # print(zero_lab.shape)
-    # print(one_att.shape)
-    # print(one_lab.shape)
+    print(zero_att.shape)
+    print(zero_lab.shape)
+    print(one_att.shape)
+    print(one_lab.shape)
 
     zero_att = zero_att[:one_att.shape[0]]
     zero_lab = zero_lab[:one_att.shape[0]]
@@ -64,7 +63,14 @@ def balance_and_split_into_train_valid_test(filename):
     data.attributes = np.vstack((zero_att, one_att))
     data.labels = np.append(zero_lab, one_lab)
 
+
+    unique_labels, count = np.unique(data.labels, return_counts=True)
+    print(unique_labels)
+
     indices = np.random.permutation(data.attributes.shape[0])
+    data.attributes = data.attributes[indices]
+    data.labels = data.labels[indices]
+
     split_point1 = (data.attributes.shape[0] * 8) // 10
     split_point2 = (data.attributes.shape[0] * 9) // 10
 
@@ -76,6 +82,15 @@ def balance_and_split_into_train_valid_test(filename):
 
     test_att = data.attributes[split_point2:]
     test_lab = data.labels[split_point2:]
+
+    unique_labels, count = np.unique(train_lab, return_counts=True)
+    print(unique_labels)
+
+    unique_labels, count = np.unique(valid_lab, return_counts=True)
+    print(unique_labels)
+
+    unique_labels, count = np.unique(test_lab, return_counts=True)
+    print(unique_labels)
 
     return train_att, train_lab, valid_att, valid_lab, test_att, test_lab
 

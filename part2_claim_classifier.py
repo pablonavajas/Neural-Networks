@@ -5,10 +5,10 @@ import torch.nn as nn
 import torch.optim as optim
 import readData
 import math
-from sklearn.model_selection import GridSearchCV
 from sklearn import metrics
 import matplotlib.pyplot as plt
 import eval_plots
+from plots import print_data_split
 
 
 def linear_block(in_n, out_n):
@@ -24,33 +24,6 @@ def linear_block(in_n, out_n):
 
 
 class ClaimClassifier(nn.Module):
-
-    #    def __init__(self):
-    #
-    #        #Feel free to alter this as you wish, adding instance variables as
-    #        #necessary.
-    #
-    #        super(ClaimClassifier, self).__init__()
-    #        # Attributes
-    #        self.batch_size = 100
-    #        self.num_epochs = 20
-    #        self.learning_rate = 0.001
-    #
-    #        # Model set-up
-    #        self.layer1 = nn.Linear(9, 4)
-    #        # self.ReLU = nn.ReLU()
-    #        self.dropout = nn.Dropout()
-    #        self.layer2 = nn.Linear(4, 1)
-    #        self.sigmoid = nn.Sigmoid()
-    #
-    #    def forward(self, x):
-    #        out = self.layer1(x)
-    #        # out = self.ReLU(out)
-    #        out = self.dropout(out)
-    #        out = self.layer2(out)
-    #        out = self.sigmoid(out)
-    #        return out
-
     def __init__(self, hidden_layers, batch_size, num_epochs,
                  learning_rate):
         """
@@ -134,12 +107,13 @@ class ClaimClassifier(nn.Module):
             an instance of the fitted model
         """
 
-        # REMEMBER TO HAVE THE FOLLOWING LINE SOMEWHERE IN THE CODE
+        # Preprocess the data
         X_clean = self._preprocessor(X_raw)
 
         nr_batches = math.ceil(X_raw.shape[0] / self.batch_size)
 
         optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
+
         # Binary Cross Entropy
         criterion = nn.BCELoss()
 
@@ -337,29 +311,48 @@ def ClaimClassifierHyperParameterSearch():
     eval_plots.plot_AUC_batch_size(num_batches_arr, [9, 8, 6, 3])
 
 
+
 def main():
-    # Read in the data
-    data = readData.Dataset("part2_training_data.csv")
+    # import of data (tested and working correctly)
+    dataset = readData.balance_and_split_into_train_valid_test("part2_training_data.csv")
+    train_att, train_lab, valid_att, valid_lab, test_att, test_lab = dataset
 
-    # Splitting off a training set and a test set from the data after
-    # randomisation
-    # 90% training set, 10% test set
-    indices = np.random.permutation(data.attributes.shape[0])
-    split_point = (data.attributes.shape[0] * 9) // 10
-    training_idx, test_idx = indices[:split_point], indices[split_point:]
-    training_attributes, test_attributes = data.attributes[training_idx], \
-                                           data.attributes[test_idx]
-    training_labels, test_labels = data.labels[training_idx], data.labels[
-        test_idx]
+    print(train_att.shape)
+    print(train_lab.shape)
+    print(valid_att.shape)
+    print(valid_lab.shape)
+    print(test_att.shape)
+    print(test_lab.shape)
 
-    # Create an instance of a classifier
-    # Pass in the hidden layers as a list
-    #hidden_layers = [4, 5, 3]  # means we'll have 9 inputs, layer of 4,
-    hidden_layers = [5]  # means we'll have 9 inputs, layer of 4,
-    # then 7, then 3, then output a 1
+
+    #hidden_layers = [8, 6, 4, 3]
+    hidden_layers = [5, 4]
     classifier = ClaimClassifier(hidden_layers=hidden_layers, batch_size=100,
-                                 num_epochs=100, learning_rate=0.00001)
+                                 num_epochs=100, learning_rate=0.001)
 
+    classifier.fit(train_att, train_lab)
+
+    test_predicted_labels = classifier.predict(test_att)
+
+    print(test_predicted_labels.shape)
+    print(test_lab)
+
+    auc, [fpr, tpr] = classifier.evaluate_architecture(test_predicted_labels,
+                                                       test_lab)
+
+    #print(tpr)
+    #print(fpr)
+    print("AUC value is: ", auc)
+
+    # Plot the ROC_AUC curve
+    classifier.plot_ROC_AUC(auc, fpr, tpr)
+    # ClaimClassifierHyperParameterSearch()
+
+    # Plot the epochs-loss curve
+    classifier.plot_epochs_loss(classifier.num_epochs, classifier.losses)
+
+
+    """
     # Debugging: print the architecture of the NN.
     print(classifier)
 
@@ -384,6 +377,6 @@ def main():
 
     # Plot the epochs-loss curve
     classifier.plot_epochs_loss(classifier.num_epochs, classifier.losses)
-
+    """
 if __name__ == "__main__":
     main()
