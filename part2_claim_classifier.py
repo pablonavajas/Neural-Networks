@@ -51,8 +51,8 @@ class ClaimClassifier(nn.Module):
     #        out = self.sigmoid(out)
     #        return out
 
-    def __init__(self, hidden_layers=[4, 5, 3], batch_size=100, num_epochs=20,
-                 learning_rate=0.001):
+    def __init__(self, hidden_layers, batch_size, num_epochs,
+                 learning_rate):
         """
         Feel free to alter this as you wish, adding instance variables as
         necessary. 
@@ -192,7 +192,7 @@ class ClaimClassifier(nn.Module):
             self.losses[epoch] = loss.item()
 
         # Debug
-        print(losses)
+        #print(losses)
 
         # Plot the epochs-loss curve
         # self.plot_epochs_loss(self.num_epochs, losses)
@@ -248,13 +248,13 @@ class ClaimClassifier(nn.Module):
         auc = metrics.auc(fpr, tpr)
 
         # Calculate Precision, Recall and F1_Score
-        """
+        
         y_rounded = np.where(y_predict < 0.5, 0, 1)
         print(y_rounded)
         print(y_rounded.sum().item())
         print(metrics.classification_report(y_labels, y_rounded, target_names 
         = ['Class 0', 'Class 1']))
-        """
+        
 
         return auc, [fpr, tpr]
 
@@ -354,10 +354,11 @@ def main():
 
     # Create an instance of a classifier
     # Pass in the hidden layers as a list
-    hidden_layers = [4, 5, 3]  # means we'll have 9 inputs, layer of 4,
+    #hidden_layers = [4, 5, 3]  # means we'll have 9 inputs, layer of 4,
+    hidden_layers = [5]  # means we'll have 9 inputs, layer of 4,
     # then 7, then 3, then output a 1
     classifier = ClaimClassifier(hidden_layers=hidden_layers, batch_size=100,
-                                 num_epochs=20, learning_rate=0.001)
+                                 num_epochs=100, learning_rate=0.00001)
 
     # Debugging: print the architecture of the NN.
     print(classifier)
@@ -378,7 +379,7 @@ def main():
 
     # Plot the ROC_AUC curve
     classifier.plot_ROC_AUC(auc, fpr, tpr)
-    ClaimClassifierHyperParameterSearch()
+    #ClaimClassifierHyperParameterSearch()
 
 
     # Plot the epochs-loss curve
