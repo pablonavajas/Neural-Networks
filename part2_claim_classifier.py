@@ -128,6 +128,7 @@ class ClaimClassifier(nn.Module):
             X_batches = np.array_split(X_shuffled, nr_batches)
             y_batches = np.array_split(y_shuffled, nr_batches)
 
+            losses_arr = []
             for i, (X, y) in enumerate(zip(X_batches, y_batches)):
                 X = torch.from_numpy(X)
                 y = torch.from_numpy(y)
@@ -158,12 +159,16 @@ class ClaimClassifier(nn.Module):
                 rounded_output_values = torch.round(output_values)
 
                 correct = (rounded_output_values == y_values).sum().item()
+                losses_arr.append(loss.item())
 
             print('Epoch [{}/{}], Loss: {:.4f}, Accuracy: {:.2f}%'
                   .format(epoch + 1, self.num_epochs, loss.item(),
                           (correct / total) * 100))
 
-            self.losses[epoch] = loss.item()
+            avg_loss = sum(losses_arr)/len(losses_arr)
+
+            self.losses[epoch] = avg_loss
+
 
         # Debug
         #print(losses)
