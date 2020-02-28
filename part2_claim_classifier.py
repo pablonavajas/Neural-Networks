@@ -18,7 +18,7 @@ def linear_block(in_n, out_n):
     """
     return nn.Sequential(
         nn.Linear(in_n, out_n),
-        #nn.ReLU()
+        #nn.ReLU(),
         nn.Tanh(),
         nn.Dropout(0.2)
     )
@@ -307,7 +307,7 @@ class ClaimClassifier(nn.Module):
 
         plt.xlabel('epochs')
         plt.ylabel('loss')
-        plt.ylim(0, 0.5)  # consistent scale
+        plt.ylim(0, 1)  # consistent scale
         plt.xlim(0, num_epochs + 1)  # consistent scale
         plt.grid(True)
         plt.legend()
