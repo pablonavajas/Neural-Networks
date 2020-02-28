@@ -2,6 +2,7 @@ import numpy as np
 import readData
 import matplotlib.pyplot as plt
 from part2_claim_classifier import ClaimClassifier
+from sklearn import metrics
 
 
 def plot_AUC_num_epochs_chosen(num_epochs_arr, hidden_layers=[4, 5, 3]):
@@ -120,3 +121,5 @@ def plot_AUC_batch_size(batch_size_arr, hidden_layers=[4, 5, 3]):
     plt.plot(batch_size_choices, auc_result)
     plt.savefig('./images/AUC_vs_nr_of_batches.png')
     plt.show()
+
+print_confusion_matrix([88,13],[100,50])
