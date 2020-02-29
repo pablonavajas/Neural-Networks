@@ -7,7 +7,7 @@ import readData
 import math
 from sklearn import metrics
 import matplotlib.pyplot as plt
-import eval_plots
+import part2_eval_plots
 from plots import print_data_split
 
 
@@ -19,10 +19,7 @@ def linear_block(in_n, out_n):
     return nn.Sequential(
         nn.Linear(in_n, out_n),
         nn.ReLU()
-        #nn.Tanh(),
-        #nn.Dropout(0.5)
     )
-
 
 class ClaimClassifier(nn.Module):
     def __init__(self, hidden_layers, batch_size, num_epochs,
@@ -52,7 +49,6 @@ class ClaimClassifier(nn.Module):
 
         # 2) Output part
         self.decoder = nn.Sequential(
-            #nn.Dropout(0.2),
             nn.Linear(self.layer_neurons[-1], 1),
             nn.Sigmoid()
         )
@@ -62,8 +58,6 @@ class ClaimClassifier(nn.Module):
         Override forward() method of nn.Module class to pass input through
         the neural network.
         """
-        #print(x)
-        #print(x.shape)
         out = self.encoder(x)
         out = self.decoder(out)
         return out
@@ -84,7 +78,6 @@ class ClaimClassifier(nn.Module):
         ndarray
             A clean data set that is used for training and prediction.
         """
-        # YOUR CODE HERE
         max_per_col = X_raw.max(axis=0)
         min_per_col = X_raw.min(axis=0)
 
@@ -94,8 +87,6 @@ class ClaimClassifier(nn.Module):
         return Z
 
     def fit(self, X_raw, y_raw, X_valid, y_valid ):
-        #raw is the training set
-        #valid is the validation set
         """Classifier training function.
 
         Here you will implement the training function for your classifier.
@@ -106,6 +97,8 @@ class ClaimClassifier(nn.Module):
             An array, this is the raw data as downloaded
         y_raw : ndarray (optional)
             A one dimensional array, this is the binary target variable
+        X_valid: validation feature set
+        y_valid: validation label set
 
         Returns
         -------
@@ -172,11 +165,11 @@ class ClaimClassifier(nn.Module):
                 correct = (rounded_output_values == y_values).sum().item()
                 losses_arr.append(loss.item())
 
-            print('Epoch [{}/{}], Loss: {:.4f}, Accuracy: {:.2f}%'
-                  .format(epoch + 1, self.num_epochs, loss.item(),
-                          (correct / total) * 100))
-
             avg_loss = sum(losses_arr)/len(losses_arr)
+
+            print('Epoch [{}/{}], Loss: {:.4f}, Accuracy: {:.2f}%'
+                  .format(epoch + 1, self.num_epochs, avg_loss,
+                          (correct / total) * 100))
 
             self.losses[epoch] = avg_loss
 
@@ -193,13 +186,6 @@ class ClaimClassifier(nn.Module):
             loss = criterion(outputs, y_valid_clean_t)
 
             self.valid_losses[epoch] = loss.item()
-
-
-        # Debug
-        #print(losses)
-
-        # Plot the epochs-loss curve
-        # self.plot_epochs_loss(self.num_epochs, losses)
 
         return self
 
@@ -221,20 +207,17 @@ class ClaimClassifier(nn.Module):
             POSITIVE class (that had accidents)
         """
 
-        # REMEMBER TO HAVE THE FOLLOWING LINE SOMEWHERE IN THE CODE
         X_clean = self._preprocessor(X_raw)
         X_clean = X_clean.astype(np.float32)
         X = torch.from_numpy(X_clean)
         outputs = self.forward(X)
 
-        # create a (rx1 numpy array; here r = 2000)
         arr = outputs.data.numpy()
         arr = [x[0] for x in arr]
         arr = np.array(arr)
 
         return arr
 
-    # def evaluate_architecture(self):
     def evaluate_architecture(self, y_predict, y_labels):
         """Architecture evaluation utility.
 
@@ -246,19 +229,14 @@ class ClaimClassifier(nn.Module):
         """
         # Calculate AUC-ROC graph and AUC metric
         fpr, tpr, thresholds = metrics.roc_curve(y_labels, y_predict)
-        # print(fpr)
-        # print(tpr)
-        # print(thresholds)
         auc = metrics.auc(fpr, tpr)
 
         # Calculate Precision, Recall and F1_Score
-        
         y_rounded = np.where(y_predict < 0.5, 0, 1)
-        print(y_rounded)
-        print(y_rounded.sum().item())
+        #print(y_rounded)
+        #print(y_rounded.sum().item())
         print(metrics.classification_report(y_labels, y_rounded, target_names 
         = ['Class 0', 'Class 1']))
-        
 
         return auc, [fpr, tpr]
 
@@ -315,20 +293,16 @@ class ClaimClassifier(nn.Module):
         plt.show()
 
     def print_confusion_matrix(self, labels, predicted):
-        print(max(predicted))
         predicted = np.where(predicted < 0.5, 0, 1)
 
         assert len(labels) == len(predicted)
         cm = metrics.confusion_matrix(labels, predicted)
-
-        print(cm)
 
         fig = plt.figure(figsize=(8, 8))
         ax = fig.add_subplot(111)
         cax = ax.matshow(cm, cmap=plt.cm.Blues)
         fig.colorbar(cax, fraction=0.046, pad=0.04)
         ax.grid(False)
-
 
         # annotate with exact numbers in boxes
         for i in range(len(cm)):
@@ -338,16 +312,9 @@ class ClaimClassifier(nn.Module):
                              verticalalignment='center',
                              size=25, color='orange')
 
-        #plt.show()
-        # ax.xaxis.tick_top()
         ax.tick_params(axis='both', labelsize=13)
-        # ax.set_yticks(range(len(labels)), minor=False)
-        # ax.set_xticks(range(len(labels)), minor=False)
-        # ax.set_xticklabels(labels, minor=False, rotation=45, ha='left')
-        # ax.set_yticklabels(predicted, minor=False)
         plt.xlabel('Predicted Label', fontsize=18, labelpad=30)
         plt.ylabel('True Label', fontsize=18)
-        #ax.set_ylim(10 - 0.5, -0.5)
         plt.rcParams["axes.edgecolor"] = "0.6"
         plt.rcParams["axes.grid"] = False
 
@@ -361,10 +328,6 @@ class ClaimClassifier(nn.Module):
         with open('part2_claim_classifier.pickle', 'wb') as target:
             pickle.dump(self, target)
 
-
-
-
-
 def load_model():
     # Please alter this section so that it works in tandem with the
     # save_model method of your class
@@ -372,13 +335,6 @@ def load_model():
         trained_model = pickle.load(target)
     return trained_model
 
-
-############################################################
-#           HELPERS FOR HYPERPARAM TUNING                  #
-############################################################
-
-
-# ENSURE TO ADD IN WHATEVER INPUTS YOU DEEM NECESSARRY TO THIS FUNCTION
 def ClaimClassifierHyperParameterSearch():
     """Performs a hyper-parameter for fine-tuning the classifier.
 
@@ -387,92 +343,62 @@ def ClaimClassifierHyperParameterSearch():
 
     The function should return your optimised hyper-parameters. 
     """
-    # -------- possible hyperparameters ------------
-    # batch size, num_epochs
-    # a 1-D array of nr_neurons in each layer
-    # a 1-D array of activation functions for each layer
-    # a 1-D array of 1s or 0s indicating presence of dropout function
-    # optimization function
-    # dropout
-    # learning rate and momentum
+    # -------- hyper-parameters to tune ------------
+    # learning rate
+    # number of epochs
+    # batch size
+    # activation function
+    # layers
 
-    # different options for hyperparameters
-    num_epochs_arr = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
-    eval_plots.plot_AUC_num_epochs_chosen(num_epochs_arr, [9, 8, 6, 3])
-
-    num_batches_arr = [50, 100, 150, 200, 250, 300, 350, 400]
-    eval_plots.plot_AUC_batch_size(num_batches_arr, [9, 8, 6, 3])
-
-
+    """
+    We have implemented a more manual tuning of the hyperparameters
+    by updating the main function in the order as above - see the report for details.
+    """
 
 def main():
-    # import of data (tested and working correctly)
+    """
+    Used to tune the hyperparameters of the model through manual testing. 
+    Current set-up is the best model that we found during testing.
+    """
+
+    #Import the dataset
     dataset = readData.balance_and_split_into_train_valid_test("part2_training_data.csv")
+
+    #Split into training, validation and test sets
     train_att, train_lab, valid_att, valid_lab, test_att, test_lab = dataset
 
-    print(train_att.shape)
-    print(train_lab.shape)
-    print(valid_att.shape)
-    print(valid_lab.shape)
-    print(test_att.shape)
-    print(test_lab.shape)
+    #Set the hidden layer neurons
+    hidden_layers = [10,20,30]
 
-
-    #hidden_layers = [9, 6, 4, 3]
-    #hidden_layers = [8, 8, 6, 3]
-    hidden_layers = [10]
-
+    #Initiate a classifier
     classifier = ClaimClassifier(hidden_layers=hidden_layers, batch_size=100,
-                                 num_epochs=100, learning_rate=0.001)
+                                 num_epochs=30, learning_rate=0.0001)
 
+    # Train the NN.
     classifier.fit(train_att, train_lab, valid_att, valid_lab)
 
+    # Save the model
+    classifier.save_model()
+
+    # Calculate the predicted labels for the test set
     test_predicted_labels = classifier.predict(test_att)
 
-    print(test_predicted_labels.shape)
-    print(test_lab)
+    # Plot the Confusion Matrix
     classifier.print_confusion_matrix(test_lab, test_predicted_labels)
 
+    #Evaluate the architecture
     auc, [fpr, tpr] = classifier.evaluate_architecture(test_predicted_labels,
                                                        test_lab)
 
-    #print(tpr)
-    #print(fpr)
+    #Print the AUC value
     print("AUC value is: ", auc)
 
     # Plot the ROC_AUC curve
     classifier.plot_ROC_AUC(auc, fpr, tpr)
-    # ClaimClassifierHyperParameterSearch()
 
-    # Plot the epochs-loss curve
+    # Plot the Loss-Epochs curve
     classifier.plot_epochs_loss(classifier.num_epochs, classifier.losses, classifier.valid_losses)
 
 
-    """
-    # Debugging: print the architecture of the NN.
-    print(classifier)
-
-    # Fit the model to the training data
-    classifier.fit(training_attributes, training_labels)
-
-    # Test the model on the test data
-    test_predicted_labels = classifier.predict(test_attributes)
-
-    # Debug
-    print(test_predicted_labels)
-
-    # Evaluate the performance of the architecture
-    auc, [fpr, tpr] = classifier.evaluate_architecture(test_predicted_labels,
-                                                       test_labels)
-    print("AUC value is: ", auc)
-
-    # Plot the ROC_AUC curve
-    classifier.plot_ROC_AUC(auc, fpr, tpr)
-    #ClaimClassifierHyperParameterSearch()
-
-
-    # Plot the epochs-loss curve
-    classifier.plot_epochs_loss(classifier.num_epochs, classifier.losses)
-    """
 if __name__ == "__main__":
     main()
