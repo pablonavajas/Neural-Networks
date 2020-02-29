@@ -3,6 +3,10 @@ from sklearn.model_selection import train_test_split
 import pickle
 import numpy as np
 
+# Import extra libraries for building a classifier
+import torch
+import torch.nn as nn
+
 # External library to process categorical data
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
@@ -133,11 +137,16 @@ class PricingModel():
         X_clean = self._preprocessor(X_raw)
 
         # THE FOLLOWING GETS CALLED IF YOU WISH TO CALIBRATE YOUR PROBABILITES
+        """
+        We won't be calibrating our probabilities hence this won't be called.
+        """
         if self.calibrate:
             self.base_classifier = fit_and_calibrate_classifier(
                 self.base_classifier, X_clean, y_raw)
         else:
             self.base_classifier = self.base_classifier.fit(X_clean, y_raw)
+
+
         return self.base_classifier
 
     def predict_claim_probability(self, X_raw):
@@ -157,17 +166,17 @@ class PricingModel():
             values corresponding to the probability of beloning to the
             POSITIVE class (that had accidents)
         """
-        # =============================================================
-        # REMEMBER TO A SIMILAR LINE TO THE FOLLOWING SOMEWHERE IN THE CODE
-        # X_clean = self._preprocessor(X_raw)
 
-        X = self._preprocessor(X_raw)
+        X_clean = self._preprocessor(X_raw)
+        X_clean = X_clean.astype(np.float32)
+        X = torch.from_numpy(X_clean)
+        outputs = self.forward(X) #need to implement a forward function in our classifier
 
-        model = 
-        
-        prob = model(X)
+        arr = outputs.data.numpy()
+        arr = [x[0] for x in arr]
+        arr = np.array(arr)
 
-        return  prob # return probabilities for the positive class (label 1)
+        return arr
 
     def predict_premium(self, X_raw):
         """Predicts premiums based on the pricing model.
