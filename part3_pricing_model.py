@@ -6,6 +6,8 @@ import numpy as np
 # Import extra libraries for building a classifier
 import torch
 import torch.nn as nn
+import torch.optim
+import math
 
 # External library to process categorical data
 from sklearn.impute import SimpleImputer
@@ -28,31 +30,21 @@ def fit_and_calibrate_classifier(classifier, X, y):
 # class for part 3
 class PricingModel():
     # YOU ARE ALLOWED TO ADD MORE ARGUMENTS AS NECESSARY
-    def __init__(self, calibrate_probabilities=False):
+    #def __init__(self, calibrate_probabilities=False):
+    def __init__(self, calibrate_probabilities=False, initial_layer, hidden_layers,
+            batch_size, num_epochs, learning_rate):
         """
         Feel free to alter this as you wish, adding instance variables as
         necessary.
         """
-        self.y_mean = None
+        self.y_mean = None  #will be a number (the mean of the claims) set in the fit() function
         self.calibrate = calibrate_probabilities
-        # =============================================================
-        # READ ONLY IF WANTING TO CALIBRATE
-        # Place your base classifier here
-        # NOTE: The base estimator must have:
-        #    1. A .fit method that takes two arguments, X, y
-        #    2. Either a .predict_proba method or a decision
-        #       function method that returns classification scores
-        #
-        # Note that almost every classifier you can find has both.
-        # If the one you wish to use does not then speak to one of the TAs
-        #
-        # If you wish to use the classifier in part 2, you will need
-        # to implement a predict_proba for it before use
-        # =============================================================
-        self.base_classifier = None # ADD YOUR BASE CLASSIFIER HERE
+        #self.base_classifier = None # ADD YOUR BASE CLASSIFIER HERE
+        self.base_classifier = BinaryClaimClassifier(initial_layer, hidden_layers, batch_size,
+                                    num_epochs, learning_rate)
 
-
-    # YOU ARE ALLOWED TO ADD MORE ARGUMENTS AS NECESSARY TO THE _preprocessor METHOD
+    
+     # YOU ARE ALLOWED TO ADD MORE ARGUMENTS AS NECESSARY TO THE _preprocessor METHOD
     def _preprocessor(self, X_raw):
         """Data preprocessing function.
 
@@ -130,22 +122,23 @@ class PricingModel():
             an instance of the fitted model
 
         """
+        #Used to calculate the severity constant.
         nnz = np.where(claims_raw != 0)[0]
         self.y_mean = np.mean(claims_raw[nnz])
-        # =============================================================
-        # REMEMBER TO HAVE A SIMILAR LINE TO THE FOLLOWING SOMEWHERE IN THE CODE
+       
+        #Clean the raw data
         X_clean = self._preprocessor(X_raw)
 
         # THE FOLLOWING GETS CALLED IF YOU WISH TO CALIBRATE YOUR PROBABILITES
         """
-        We won't be calibrating our probabilities hence this won't be called.
+        We won't be calibrating our probabilities hence the else branch
+        will be executed.
         """
         if self.calibrate:
             self.base_classifier = fit_and_calibrate_classifier(
                 self.base_classifier, X_clean, y_raw)
         else:
             self.base_classifier = self.base_classifier.fit(X_clean, y_raw)
-
 
         return self.base_classifier
 
@@ -167,16 +160,10 @@ class PricingModel():
             POSITIVE class (that had accidents)
         """
 
+        #Clean the data, then pass it into the predict method
+        #of the binary classifier
         X_clean = self._preprocessor(X_raw)
-        X_clean = X_clean.astype(np.float32)
-        X = torch.from_numpy(X_clean)
-        outputs = self.forward(X) #need to implement a forward function in our classifier
-
-        arr = outputs.data.numpy()
-        arr = [x[0] for x in arr]
-        arr = np.array(arr)
-
-        return arr
+        return self.base_classifier.predict(X_clean)
 
     def predict_premium(self, X_raw):
         """Predicts premiums based on the pricing model.
@@ -198,7 +185,6 @@ class PricingModel():
         # =============================================================
         # REMEMBER TO INCLUDE ANY PRICING STRATEGY HERE.
         # For example you could scale all your prices down by a factor
-
         
 
         return self.predict_claim_probability(X_raw) * self.y_mean
@@ -215,3 +201,200 @@ def load_model():
     with open('part3_pricing_model.pickle', 'rb') as target:
         trained_model = pickle.load(target)
     return trained_model
+
+
+##############################################################################
+# Modified Binary Classifier from Part 2 used to create the frequency model. #
+##############################################################################
+
+def linear_block(in_n, out_n):
+    """
+    Used to construct the hidden layers in the architecture of the
+    Binary Claim Classifier.
+    """
+    return nn.Sequential(
+        nn.Linear(in_n, out_n),
+        nn.ReLU()
+    )
+
+class BinaryClaimClassifier(nn.Module):
+    def __init__(self, initial_layer, hidden_layers, batch_size, num_epochs,
+                 learning_rate):
+        """
+        initial_layer is the number of neurons in the input layer.
+        hidden_layers is a list of the number of neurons per layer.
+        batch_size is the size per batch used in training.
+        num_epochs is the number of epochs used in training.
+        learning_rate is the rate applied for gradient descent.
+        """
+        super(BinaryClaimClassifier, self).__init__()
+
+        # Attributes
+        self.batch_size = batch_size
+        self.num_epochs = num_epochs
+        self.learning_rate = learning_rate
+        self.losses = np.zeros(self.num_epochs, dtype=float)
+        #self.valid_losses = np.zeros(self.num_epochs, dtype=float)
+
+        # Model set-up
+        # 1) Passing hidden_layers as a list
+        self.layer_neurons = [initial_layer] + hidden_layers
+        linear_layers = [linear_block(in_f, out_f)
+                         for in_f, out_f in
+                         zip(self.layer_neurons, self.layer_neurons[1:])]
+        self.encoder = nn.Sequential(*linear_layers)
+
+        # 2) Output part
+        self.decoder = nn.Sequential(
+            nn.Linear(self.layer_neurons[-1], 1),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        """
+        Override forward() method of nn.Module class to pass input through
+        the neural network.
+        """
+        out = self.encoder(x)
+        out = self.decoder(out)
+        return out
+
+    def fit(self, X_clean, y_raw):
+        """ 
+        Parameters
+        ----------
+        X_raw : ndarray
+            An array, this is the clean data used after pre-processing
+        y_raw : ndarray (optional)
+            A one dimensional array, this is the binary target variable
+
+        Returns
+        -------
+        self: (optional)
+            an instance of the fitted model
+        """
+        # Preprocess the data
+        #X_clean = self._preprocessor(X_raw)
+        #X_valid_clean = self._preprocessor(X_valid)
+
+        nr_batches = math.ceil(X_clean.shape[0] / self.batch_size)
+
+        optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
+
+        # Binary Cross Entropy
+        criterion = nn.BCELoss()
+
+        # Array of losses to be used for plotting
+        losses = np.zeros(self.num_epochs, dtype=float)
+
+        for epoch in range(self.num_epochs):
+            indices = np.random.permutation(X_clean.shape[0])
+            X_shuffled = X_clean[indices].astype(np.float32)
+            y_shuffled = y_raw[indices].astype(np.float32)
+
+            X_batches = np.array_split(X_shuffled, nr_batches)
+            y_batches = np.array_split(y_shuffled, nr_batches)
+
+            losses_arr = []
+            for i, (X, y) in enumerate(zip(X_batches, y_batches)):
+                X = torch.from_numpy(X)
+                y = torch.from_numpy(y)
+
+                # resize from batch_size to (batch_size,1)
+                y = y.view(-1, 1)
+
+                # run forwards
+                outputs = self.forward(X)
+                loss = criterion(outputs, y)
+
+                # backprop
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+                # track the accuracy
+                total = y.size(0)
+                # use first parameter from max function to get tensors of
+                # shape [100]
+                # for both the outputs and labels (converting from a
+                # tensor of 1x100, each element being a list containing
+                # 1 element)
+                output_values, predicted = torch.max(outputs.data, 1)
+                y_values, predicted_y = torch.max(y, 1)
+
+                # round the output probabilities in order to calculate accuracy
+                rounded_output_values = torch.round(output_values)
+
+                correct = (rounded_output_values == y_values).sum().item()
+                losses_arr.append(loss.item())
+
+            avg_loss = sum(losses_arr)/len(losses_arr)
+
+            print('Epoch [{}/{}], Loss: {:.4f}, Accuracy: {:.2f}%'
+                  .format(epoch + 1, self.num_epochs, avg_loss,
+                          (correct / total) * 100))
+
+            self.losses[epoch] = avg_loss
+
+     	    ######################
+            # validate the model #
+            ######################
+            #self.eval()  # prep model for evaluation
+            #X_valid_clean = X_valid_clean.astype(np.float32)
+            #y_valid = y_valid.astype(np.float32)
+            #X_valid_clean_t = torch.from_numpy(X_valid_clean)
+            #y_valid_clean_t = torch.from_numpy(y_valid)
+            #y_valid_clean_t = y_valid_clean_t.view(-1, 1)
+            #outputs = self.forward(X_valid_clean_t)
+            #loss = criterion(outputs, y_valid_clean_t)
+
+            #self.valid_losses[epoch] = loss.item()
+
+    return self
+
+    def predict(self, X_clean):
+        """ 
+        Parameters
+        ----------
+        X_clean : ndarray
+            An array, this is the preprocessed data
+
+        Returns
+        -------
+        ndarray
+            A one dimensional array of the same length as the input with
+            values corresponding to the probability of beloning to the
+            POSITIVE class (that had accidents)
+        """
+
+        X_clean = X_clean.astype(np.float32)
+        X = torch.from_numpy(X_clean)
+        outputs = self.forward(X)
+
+        arr = outputs.data.numpy()
+        arr = [x[0] for x in arr]
+        arr = np.array(arr)
+
+        return arr
+
+    def evaluate_architecture(self, y_predict, y_labels):
+        """Architecture evaluation utility.
+
+        Populate this function with evaluation utilities for your
+        neural network.
+
+        You can use external libraries such as scikit-learn for this
+        if necessary.
+        """
+        # Calculate AUC-ROC graph and AUC metric
+        fpr, tpr, thresholds = metrics.roc_curve(y_labels, y_predict)
+        auc = metrics.auc(fpr, tpr)
+
+        # Calculate Precision, Recall and F1_Score
+        y_rounded = np.where(y_predict < 0.5, 0, 1)
+        print(metrics.classification_report(y_labels, y_rounded, target_names
+        = ['Class 0', 'Class 1']))
+
+        return auc, [fpr, tpr]
+
+
