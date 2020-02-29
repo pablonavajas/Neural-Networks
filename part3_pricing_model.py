@@ -11,8 +11,8 @@ import math
 
 # External library to process categorical data
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder
-from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import LabelBinarizer
+import pandas as pd
 
 
 def fit_and_calibrate_classifier(classifier, X, y):
@@ -69,37 +69,58 @@ class PricingModel():
 
         Label encoder: must address cols: [0, 2, 5, 6, 7, 9, 12, 19, 20, 21, 25]
         """
-
-        # Ensure data is numpy array
-        if not (isinstance(X_raw, (np.ndarray))):
-            X_raw = X_raw.to_numpy()
-
+    
+        # Establish a maximum cardinality for categorical variables
+        max_card = 70
         
+        # Find all categorical columns
+        categorical_cols = X_raw.select_dtypes(exclude=np.number)
+
+        # Select columns with too high cardinality
+        excs_card_cols = [col for col in categorical_cols if categorical_cols[col].nunique() > max_card]
+
+        print(excs_card_cols)
+    
+        # drop columns with excessive cardinality
+        X_raw = X_raw.drop(columns=excs_card_cols)
+
+        # ... continue with solution
+        # listp = [i[p] for i in l1np for p in range(len(l1np[0])) if isinstance(i[p], (str))]
+    
+        X_np = X_raw.to_numpy()
+
+        # Find all columns with categorical data
+        strlist = [i for i in range(len(X_np[0])) if isinstance(X_np[0][i], str) or isinstance(X_np[1][i],str)]
+
         # Replace all missing values
-        # (will be 0 for numerical data and "missing value" for categorical data
-        imputer = SimpleImputer(missing_values = np.nan, strategy='constant')
+        # (will be 0 for numerical data and "missing_val" for categorical data
+        imputer_str = SimpleImputer(missing_values = np.nan, strategy='constant', fill_value='missing_val')
+        imputer_num = SimpleImputer(missing_values = np.nan, strategy='constant', fill_value=-1)
 
-        imputer = imputer.fit(X_raw[:,1:])
+        for col in range(len(X_np[0])):
+            if col in strlist:
+                imputer_str = imputer_str.fit(X_np[:,col:col+1])
+                X_np[:,col:col+1] = imputer_str.transform(X_np[:,col:col+1])
+            else:
+                imputer_num = imputer_num.fit(X_np[:,col:col+1])
+                X_np[:,col:col+1] = imputer_num.transform(X_np[:,col:col+1])
 
-        X_raw[:, 1:] = imputer.transform(X_raw[:,1:])
+        # Convert Categorical data into 1-Hot format
+        label_coder = LabelBinarizer()
 
-        
-        # Convert Categorical values into numerical data
-        label_coder = LabelEncoder()
-
-        for col in range(len(X_raw[0])):
-            if not (isinstance(X_raw[0][col], (int)) or isinstance(X_raw[0][col], (float))):
-                X_raw[:,col] = label_coder.fit_transform(X_raw[:,col])
-
-
-        # Convert data to a 1-hot format
-        col_trans = ColumnTransformer([('encoder', OneHotEncoder(categories='auto'), [0])],
-                                      remainder='passthrough')
-        
-        X = np.array(col_trans.fit_transform(X_raw), dtype = np.str)
-
-        ##### Future warning ... solved by OneHotEncoder(categories='auto')
-        
+        for col in range(len(X_np[0])):
+            if col in strlist:
+                onehot = label_coder.fit_transform(X_np[:,col])
+                if col == 0:
+                    X = onehot
+                else:
+                    X = np.concatenate((X, onehot), axis=1)
+            else:
+                if col == 0:
+                    X = X_np[:,col:col+1]
+                else:
+                    X = np.concatenate((X, X_np[:,col:col+1]), axis=1)
+                    
         return X
 
     def fit(self, X_raw, y_raw, claims_raw):
@@ -488,15 +509,24 @@ def main():
     Current set-up is the best model that we found during testing.
     """
 
-    #TODO - Import the dataset
+    # Import the dataset
+    X_raw = pd.read_csv("part3_training_data.csv")
 
     #TODO - Split into appropriate sets (maybe training and test, then will 
     #pass training into the fit() function of the classifier and split this into
     #training and validation within the function itself for training
     #Remember to randomise this dataset before doing splits.
-
+    
+    
     #TODO - Need to split off a claims_raw np.array
     #Calling it claims_raw in code below
+    X_raw = dat.drop(columns=["claim_amount", "made_claim"])
+
+    y_raw = dat["made_claim"]
+    y_raw = y_raw.to_numpy()
+    
+    claims_raw = dat["claim_amount"]
+    claims_raw = claims_raw.to_numpy()
 
     #TODO - Set the input layer
     input_layer = 240

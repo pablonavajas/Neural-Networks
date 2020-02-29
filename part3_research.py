@@ -5,51 +5,103 @@ import numpy as np
 
 # External library to process categorical data
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder
-from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import LabelBinarizer #Encoder, OneHotEncoder
+#from sklearn.compose import ColumnTransformer
 
 
 import pandas as pd
 
+"""class DataFrameImputer(TransformerMixin):
+
+    def __init__(self):
+
+    def fit(self, X, y=None):
+
+        self.fill = pd.Series([X[c].value_counts().index[0]
+                               if X[c].dtype == np.dtype('0') else X[c]
+"""
+
 def process():
-    l1 = pd.read_csv("part3_training_data_short.csv")
-
-    ############################################################################################################
-    #                          HIGH CARDINALITY                                                                #
-    #                                                                                                          #
-    # ...high_card = [col for col in l1np.select_dtypes(exclude=np.number) if l1np[col].nunique() > max_card]  #
-    ############################################################################################################
     
-    # Too high cardinality columns (to splitted)
-    max_card = 7 #number of cases studied here
 
-    # find non_numerical columns
-    non_num = l1.select_dtypes(exclude=np.number)
+    ############################################################
+    # HIGH CARDINALITY  (not implemented in solution ... yet)  #
+    #                                                          #
+    ############################################################
+    #...high_card = [col for col in l1np.select_dtypes(exclude=np.number) if l1np[col].nunique() > max_card]
+    """
+    Unsuccesful use of 1-HOT ENCODER:
 
-    # select columns with too high cardinality
-    too_long = [col for col in non_num if non_num[col].nunique() > max_card]
+    for col in strlist: #range(len(l1np[0])):
+    l1np[:,col] = label_coder.fit_transform(l1np[:,col])
+    #l1np[:,col] = np.reshape(label_coder.fit_transform(l1np[:,col]), (len(l1np)))
+    
+    #if not (isinstance(l1np[0][col], (int)) or isinstance(l1np[0][col], (float))):
+    #l1np[:,col] = label_coder.fit_transform(l1np[:,col])
+
+    col_trans = ColumnTransformer([('encoder', OneHotEncoder(categories='auto'), [0])],  
+                                   remainder='passthrough')
+
+    X = np.array(col_trans.fit_transform(l1np), dtype = np.int)
+    """
+
+    X_raw = pd.read_csv("part3_training_data.csv")
+
+    """
+    from sklearn.impute import SimpleImputer
+    from sklearn.preprocessing import LabelBinarizer
+    """
+    
+    # Establish a maximum cardinality for categorical variables
+    max_card = 70
+
+    # Find all categorical columns
+    categorical_cols = X_raw.select_dtypes(exclude=np.number)
+
+    # Select columns with too high cardinality
+    excs_card_cols = [col for col in categorical_cols if categorical_cols[col].nunique() > max_card]
+
+    print(excs_card_cols)
     
     # drop columns with excessive cardinality
-    l1 = l1.drop(columns=too_long)
+    X_raw = X_raw.drop(columns=excs_card_cols)
 
+    # ... continue with solution
+    # listp = [i[p] for i in l1np for p in range(len(l1np[0])) if isinstance(i[p], (str))]
     
-    l1np = l1.to_numpy()
+    X_np = X_raw.to_numpy()
 
-    imputer = SimpleImputer(missing_values = np.nan, strategy='constant')
-    imputer = imputer.fit(l1np[:,1:])
-    l1np[:, 1:] = imputer.transform(l1np[:,1:])
+    print(X_np[0])
+    
+    imputer_str = SimpleImputer(missing_values = np.nan, strategy='constant', fill_value='missing_val')
+    imputer_num = SimpleImputer(missing_values = np.nan, strategy='constant', fill_value=-1)
+    
+    strlist = [i for i in range(len(X_np[0])) if isinstance(X_np[0][i], str) or isinstance(X_np[1][i],str)]
+    
+    for col in range(len(X_np[0])):
+        if col in strlist:
+            imputer_str = imputer_str.fit(X_np[:,col:col+1])
+            X_np[:,col:col+1] = imputer_str.transform(X_np[:,col:col+1])
+        else:
+            imputer_num = imputer_num.fit(X_np[:,col:col+1])
+            X_np[:,col:col+1] = imputer_num.transform(X_np[:,col:col+1])
     
 
-    label_coder = LabelEncoder()
+    label_coder = LabelBinarizer()
 
-    for col in range(len(l1np[0])):
-        if not (isinstance(l1np[0][col], (int)) or isinstance(l1np[0][col], (float))):
-            l1np[:,col] = label_coder.fit_transform(l1np[:,col])
-
-    col_trans = ColumnTransformer([('encoder', OneHotEncoder(categories='auto'), [0])],
-                                          remainder='passthrough')
-    X = np.array(col_trans.fit_transform(l1np), dtype = np.str)
-
+    for col in range(len(X_np[0])):
+        if col in strlist:
+            onehot = label_coder.fit_transform(X_np[:,col])
+            if col == 0:
+                X = onehot
+            else:
+                X = np.concatenate((X, onehot), axis=1)
+        else:
+            if col == 0:
+                X = X_np[:,col:col+1]
+            else:
+                X = np.concatenate((X, X_np[:,col:col+1]), axis=1)
+        
     return X
 
 ######################
@@ -62,8 +114,8 @@ def gmm_pred(X):
 
     sns.set()
 
-    """
-    n_components = np.arange(1,9)
+    
+    n_components = np.arange(1,21)
     models = [GaussianMixture(n, covariance_type='full', random_state=0).fit(X) for n in n_components]
 
     plt.plot(n_components, [m.bic(X) for m in models], label='BIC')
@@ -80,7 +132,7 @@ def gmm_pred(X):
     labels = gmm.predict(X)
 
     print(labels) 
-    
+    """
     
     return 0 #labels
 
@@ -89,4 +141,7 @@ if __name__=='__main__':
 
     x = process()
 
-    gmm_pred(x)
+    print(x[0])
+    print(len(x[0]))
+    
+    #gmm_pred(x)
