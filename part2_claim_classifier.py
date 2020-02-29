@@ -109,7 +109,7 @@ class ClaimClassifier(nn.Module):
         ################
 
         # Preprocess the data
-        X_clean = self._preprocessor(X_raw)
+        x_clean = self._preprocessor(X_raw)
         X_valid_clean = self._preprocessor(X_valid)
 
         nr_batches = math.ceil(X_raw.shape[0] / self.batch_size)
@@ -124,7 +124,7 @@ class ClaimClassifier(nn.Module):
 
         for epoch in range(self.num_epochs):
             indices = np.random.permutation(X_raw.shape[0])
-            X_shuffled = X_clean[indices].astype(np.float32)
+            X_shuffled = x_clean[indices].astype(np.float32)
             y_shuffled = y_raw[indices].astype(np.float32)
 
             X_batches = np.array_split(X_shuffled, nr_batches)
@@ -271,10 +271,8 @@ class ClaimClassifier(nn.Module):
         idx = np.argwhere(np.diff(np.sign(valid_losses-losses))).flatten ()
 
         intersections_points = np.arange(1, num_epochs+1)[idx]
-        print(intersections_points)
         if intersections_points.size != 0:
            intersection_point = intersections_points[0]
-           print(intersection_point)
            plt.axvline(intersection_point, linestyle='--', color='r',
                       label='Intersection of Validation and Training')
 
