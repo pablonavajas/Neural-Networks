@@ -397,4 +397,66 @@ class BinaryClaimClassifier(nn.Module):
 
         return auc, [fpr, tpr]
 
+def main():
+    """
+    Used to tune the hyperparameters of the model through manual testing. 
+    Current set-up is the best model that we found during testing.
+    """
 
+    #TODO - Import the dataset
+
+    #TODO - Split into appropriate sets (maybe training and test, then will 
+    #pass training into the fit() function of the classifier and split this into
+    #training and validation within the function itself for training
+    #Remember to randomise this dataset before doing splits.
+
+    #TODO - Need to split off a claims_raw np.array
+    #Calling it claims_raw in code below
+
+    #TODO - Set the input layer
+    input_layer = 240
+
+    #TODO - PICK YOUR OWN EXAMPLE
+    #Set the hidden layer neurons
+    hidden_layers = [10,20,30]
+
+    #Initiate a Pricing Model
+    pricingmodel = PricingModel(calibrate_probabilities=False, initial_layer, hidden_layers,
+            batch_size = 100, num_epochs = 30, learning_rate = 0.001)
+
+    # Train the NN.
+    #TODO - CHANGE THE Parameter names as appropriate
+    pricingmodel.fit(X_raw, y_raw, claims_raw)
+
+    # TODO = Save the best model - commented out for now
+    #pricingmodel.save_model()
+
+    #Calculate the predicted_probabilities
+    predicted_prob = pricingmodel.predict_claim_probability(X_raw)
+
+    #Calculate the premiums
+    #TODO - Change parameter name as appropriate
+    pricingmodel.predict_premium(X_raw)
+
+    #Evaluate the architecture
+    #TODO - change y_test for variable name you need
+    auc, [fpr, tpr] = pricingmodel.base_classifier.evaluate_architecture(predicted_prob,
+                                                       y_test)
+
+    #Print the AUC value
+    #TODO - need this above 60%
+    print("AUC value is: ", auc)
+
+    # Plot the ROC_AUC curve
+    #TODO - May not need this
+    pricingmodel.base_classifier.plot_ROC_AUC(auc, fpr, tpr)
+
+    # Plot the Loss-Epochs curve
+    #TODO - May not need this
+    #TODO - Will need me to amend the fit() function of the binary classifier if doing this
+    #pricingmodel.base_classifier.plot_epochs_loss(pricingmodel.base_classifier.num_epochs,
+            pricingmodel.base_classifier.losses, pricingmodel.base_classifier.valid_losses)
+
+
+if __name__ == "__main__":
+    main()
