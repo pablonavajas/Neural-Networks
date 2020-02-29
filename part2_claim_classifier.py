@@ -205,13 +205,13 @@ class ClaimClassifier(nn.Module):
             POSITIVE class (that had accidents)
         """
 
-        X_clean = self._preprocessor(X_raw)
-        X_clean = X_clean.astype(np.float32)
-        X = torch.from_numpy(X_clean)
-        outputs = self.forward(X)
+        x_clean = self._preprocessor(X_raw)
+        x_clean = x_clean.astype(np.float32)
+        x = torch.from_numpy(x_clean)
+        outputs = self.forward(x)
 
         arr = outputs.data.numpy()
-        arr = [x[0] for x in arr]
+        arr = [z[0] for z in arr]
         arr = np.array(arr)
 
         return arr
