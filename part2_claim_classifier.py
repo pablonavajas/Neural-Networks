@@ -7,8 +7,6 @@ import readData
 import math
 from sklearn import metrics
 import matplotlib.pyplot as plt
-import part2_eval_plots
-from plots import print_data_split
 
 
 def linear_block(in_n, out_n):
@@ -233,9 +231,7 @@ class ClaimClassifier(nn.Module):
 
         # Calculate Precision, Recall and F1_Score
         y_rounded = np.where(y_predict < 0.5, 0, 1)
-        #print(y_rounded)
-        #print(y_rounded.sum().item())
-        print(metrics.classification_report(y_labels, y_rounded, target_names 
+        print(metrics.classification_report(y_labels, y_rounded, target_names
         = ['Class 0', 'Class 1']))
 
         return auc, [fpr, tpr]
