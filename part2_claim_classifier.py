@@ -135,7 +135,7 @@ class ClaimClassifier(nn.Module):
                 X = torch.from_numpy(X)
                 y = torch.from_numpy(y)
 
-                # resize from 100 to (100,1)
+                # resize from batch_size to (batch_size,1)
                 y = y.view(-1, 1)
 
                 # run forwards
@@ -150,9 +150,9 @@ class ClaimClassifier(nn.Module):
                 # track the accuracy
                 total = y.size(0)
                 # use first parameter from max function to get tensors of
-                # shape [100]
+                # shape [batch_size]
                 # for both the outputs and labels (converting from a
-                # tensor of 1x100, each element being a list containing
+                # tensor of 1xbatch_size, each element being a list containing
                 # 1 element)
                 output_values, predicted = torch.max(outputs.data, 1)
                 y_values, predicted_y = torch.max(y, 1)
@@ -204,6 +204,9 @@ class ClaimClassifier(nn.Module):
             values corresponding to the probability of beloning to the
             POSITIVE class (that had accidents)
         """
+
+        if type(X_raw) is not np.ndarray:
+            X_raw = X_raw.to_numpy()
 
         x_clean = self._preprocessor(X_raw)
         x_clean = x_clean.astype(np.float32)
