@@ -397,6 +397,91 @@ class BinaryClaimClassifier(nn.Module):
 
         return auc, [fpr, tpr]
 
+
+    def plot_ROC_AUC(self, auc, fpr, tpr):
+        """
+        Plots the ROC_AUC curve.
+        """
+
+        plt.figure()
+        lw = 2
+        plt.plot(fpr, tpr, color='darkorange',
+                 lw=lw, label='ROC curve (area = %0.2f)' % auc)
+        plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver operating characteristic')
+        plt.legend(loc="lower right")
+        plt.savefig('./images/auc_plot.png', bbox_inches='tight')
+        plt.show()
+
+	
+    def plot_epochs_loss(self, num_epochs, losses, valid_losses):
+        """
+        Plots the epochs on the x-axis, the value of the loss function on the
+        y-axis.
+        """
+        # visualize the loss as the network trained
+        fig = plt.figure(figsize=(10, 8))
+        plt.plot(range(1, num_epochs+1), losses,
+                 label='Training Loss')
+        plt.plot(range(1, num_epochs+1), valid_losses,
+                 label='Validation Loss')
+
+        # find position of lowest validation loss
+        idx = np.argwhere(np.diff(np.sign(valid_losses-losses))).flatten ()
+
+        intersections_points = np.arange(1, num_epochs+1)[idx]
+        print(intersections_points)
+        if intersections_points.size != 0:
+           intersection_point = intersections_points[0]
+           print(intersection_point)
+           plt.axvline(intersection_point, linestyle='--', color='r',
+                      label='Intersection of Validation and Training')
+
+        plt.xlabel('epochs')
+        plt.ylabel('loss')
+        plt.ylim(0, 1)  # consistent scale
+        plt.xlim(0, num_epochs + 1)  # consistent scale
+        plt.grid(True)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig('./images/loss_plot.png', bbox_inches='tight')
+        plt.show()
+
+
+    def print_confusion_matrix(self, labels, predicted):
+        predicted = np.where(predicted < 0.5, 0, 1)
+
+        assert len(labels) == len(predicted)
+        cm = metrics.confusion_matrix(labels, predicted)
+
+        fig = plt.figure(figsize=(8, 8))
+        ax = fig.add_subplot(111)
+        cax = ax.matshow(cm, cmap=plt.cm.Blues)
+        fig.colorbar(cax, fraction=0.046, pad=0.04)
+        ax.grid(False)
+
+        # annotate with exact numbers in boxes
+        for i in range(len(cm)):
+            for j in range(len(cm)):
+                plt.annotate(cm[i, j], xy=(j, i),
+                             horizontalalignment='center',
+                             verticalalignment='center',
+                             size=25, color='orange')
+
+        ax.tick_params(axis='both', labelsize=13)
+        plt.xlabel('Predicted Label', fontsize=18, labelpad=30)
+        plt.ylabel('True Label', fontsize=18)
+        plt.rcParams["axes.edgecolor"] = "0.6"
+        plt.rcParams["axes.grid"] = False
+
+        plt.title("Confusion Matrix Plot", pad=50, fontdict={'fontsize': 20})
+        plt.savefig('./images/matrix_plot.png')
+        plt.show()
+
 def main():
     """
     Used to tune the hyperparameters of the model through manual testing. 
@@ -438,6 +523,11 @@ def main():
     #TODO - Change parameter name as appropriate
     pricingmodel.predict_premium(X_raw)
 
+    # Plot the Confusion Matrix
+    #TODO - not sure if you need this
+    #Change the params as needed
+    pricingmodel.base_classifier.print_confusion_matrix(y_test, predicted_prob)
+
     #Evaluate the architecture
     #TODO - change y_test for variable name you need
     auc, [fpr, tpr] = pricingmodel.base_classifier.evaluate_architecture(predicted_prob,
@@ -453,9 +543,9 @@ def main():
 
     # Plot the Loss-Epochs curve
     #TODO - May not need this
-    #TODO - Will need me to amend the fit() function of the binary classifier if doing this
+    #TODO - Will need me to amend the fit() function of the binary classifier if using this
     #pricingmodel.base_classifier.plot_epochs_loss(pricingmodel.base_classifier.num_epochs,
-            pricingmodel.base_classifier.losses, pricingmodel.base_classifier.valid_losses)
+    #        pricingmodel.base_classifier.losses, pricingmodel.base_classifier.valid_losses)
 
 
 if __name__ == "__main__":
