@@ -600,15 +600,12 @@ def main():
     test_claims_raw = test["claim_amount"]
     test_claims_raw = test_claims_raw.to_numpy()
 
-    # Set the input layer
-    #input_layer = 43
-
     #Set the hidden layer neurons
     hidden_layers = [10,20,30]
 
     #Initiate a Pricing Model
     pricingmodel = PricingModel(hidden_layers,batch_size = 100, num_epochs = 30,
-                                learning_rate = 0.001, calibrate_probabilities=False)
+                                learning_rate = 0.0001, calibrate_probabilities=False)
 
     # Train the NN.
     pricingmodel.fit(X_raw, y_raw, claims_raw)
@@ -620,7 +617,7 @@ def main():
     predicted_prob = pricingmodel.predict_claim_probability(test_X_raw)
 
     #Calculate the premiums
-    pricingmodel.predict_premium(test_X_raw)
+    #pricingmodel.predict_premium(test_X_raw)
 
     # Plot the Confusion Matrix
     #pricingmodel.base_classifier.print_confusion_matrix(test_y_raw, predicted_prob)
