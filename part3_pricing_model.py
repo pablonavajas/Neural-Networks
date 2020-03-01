@@ -34,19 +34,22 @@ def fit_and_calibrate_classifier(classifier, X, y):
 class PricingModel():
     # YOU ARE ALLOWED TO ADD MORE ARGUMENTS AS NECESSARY
     #def __init__(self, calibrate_probabilities=False):
-    def __init__(self, initial_layer, hidden_layers,
-                 batch_size, num_epochs, learning_rate, calibrate_probabilities=False):
+    def __init__(self, hidden_layers,batch_size, num_epochs, learning_rate,
+                 calibrate_probabilities=False):
         """
         Feel free to alter this as you wish, adding instance variables as
         necessary.
         """
         self.y_mean = None  #will be a number (the mean of the claims) set in the fit() function
         self.calibrate = calibrate_probabilities
-        #self.base_classifier = None # ADD YOUR BASE CLASSIFIER HERE
-        self.base_classifier = BinaryClaimClassifier(initial_layer, hidden_layers, batch_size,
-                                    num_epochs, learning_rate)
-
-    
+        self.base_classifier = None # ADD YOUR BASE CLASSIFIER HERE
+        #self.base_classifier = BinaryClaimClassifier(initial_layer, hidden_layers, batch_size,
+        #                            num_epochs, learning_rate)
+        self.hidden_layers = hidden_layers
+        self.batch_size = batch_size
+        self.num_epochs = num_epochs
+        self.learning_rate = learning_rate
+        
      # YOU ARE ALLOWED TO ADD MORE ARGUMENTS AS NECESSARY TO THE _preprocessor METHOD
     def _preprocessor(self, X_raw):
         """Data preprocessing function.
@@ -152,6 +155,8 @@ class PricingModel():
         #Clean the raw data
         X_clean = self._preprocessor(X_raw)
         y_clean = y_raw.to_numpy()
+        
+        initial_layer = len(X_clean[0])
 
         # Split data into training and validation:
         msk2 = np.random.rand(len(X_clean)) < 0.75
@@ -161,7 +166,10 @@ class PricingModel():
 
         train_y = y_clean[msk2]
         validation_y = y_clean[~msk2]
-        
+
+        self.base_classifier = BinaryClaimClassifier(initial_layer, self.hidden_layers,
+                                                     self.batch_size, self.num_epochs,
+                                                     self.learning_rate)
 
         # THE FOLLOWING GETS CALLED IF YOU WISH TO CALIBRATE YOUR PROBABILITES
         """
@@ -553,13 +561,13 @@ def main():
     test_claims_raw = test_claims_raw.to_numpy()
 
     # Set the input layer
-    input_layer = 43
+    #input_layer = 43
 
     #Set the hidden layer neurons
     hidden_layers = [10,20,30]
 
     #Initiate a Pricing Model
-    pricingmodel = PricingModel(input_layer, hidden_layers,batch_size = 100, num_epochs = 30,
+    pricingmodel = PricingModel(hidden_layers,batch_size = 100, num_epochs = 30,
                                 learning_rate = 0.001, calibrate_probabilities=False)
 
     # Train the NN.
