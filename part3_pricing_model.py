@@ -74,7 +74,7 @@ class PricingModel():
         if self.drop_cols == None:
             
             # Establish a maximum cardinality for categorical variables
-            max_card = 100
+            max_card = 1000
         
             # Find all categorical columns
             categorical_cols = X_raw.select_dtypes(exclude=np.number)
@@ -621,14 +621,14 @@ def main():
     hidden_layers = [10,20,30]
 
     #Initiate a Pricing Model
-    pricingmodel = PricingModel(hidden_layers,batch_size = 100, num_epochs = 30,
+    pricingmodel = PricingModel(hidden_layers,batch_size = 100, num_epochs = 15,
                                 learning_rate = 0.0001)
 
     # Train the NN.
     pricingmodel.fit(X_raw, y_raw, claims_raw)
 
     # Save the best model
-    #pricingmodel.save_model()
+    pricingmodel.save_model()
 
     #Calculate the predicted_probabilities
     predicted_prob = pricingmodel.predict_claim_probability(test_X_raw)
@@ -637,7 +637,7 @@ def main():
     pricingmodel.predict_premium(test_X_raw)
 
     # Plot the Confusion Matrix
-    #pricingmodel.base_classifier.print_confusion_matrix(test_y_raw, predicted_prob)
+    pricingmodel.base_classifier.print_confusion_matrix(test_y_raw, predicted_prob)
 
     #Evaluate the architecture
     auc, [fpr, tpr] = pricingmodel.base_classifier.evaluate_architecture(predicted_prob,
@@ -648,7 +648,7 @@ def main():
     print("AUC value is: ", auc)
 
     # Plot the ROC_AUC curve
-    #pricingmodel.base_classifier.plot_ROC_AUC(auc, fpr, tpr)
+    pricingmodel.base_classifier.plot_ROC_AUC(auc, fpr, tpr)
 
     # Plot the Loss-Epochs curve
     #pricingmodel.base_classifier.plot_epochs_loss(pricingmodel.base_classifier.num_epochs,
