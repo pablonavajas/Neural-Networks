@@ -67,12 +67,6 @@ class PricingModel():
         """
         # =============================================================
         # YOUR CODE HERE
-
-        """ 
-        Previous step: l1 = pd.read_csv("part3_training_data_short.csv")
-
-        Label encoder: must address cols: [0, 2, 5, 6, 7, 9, 12, 19, 20, 21, 25]
-        """
     
         # Establish a maximum cardinality for categorical variables
         max_card = 50
@@ -508,7 +502,7 @@ class BinaryClaimClassifier(nn.Module):
         plt.rcParams["axes.grid"] = False
 
         plt.title("Confusion Matrix Plot", pad=50, fontdict={'fontsize': 20})
-        plt.savefig('./images/matrix_plot.png')
+        plt.savefig('./images/matrix_plot_part3.png')
         plt.show()
 
 def main():
@@ -597,6 +591,7 @@ def main():
     # Plot the Loss-Epochs curve
     #TODO - May not need this
     #TODO - Will need me to amend the fit() function of the binary classifier if using this
+    # need to declare valid_losses in base_classifier
     #pricingmodel.base_classifier.plot_epochs_loss(pricingmodel.base_classifier.num_epochs,
     #        pricingmodel.base_classifier.losses, pricingmodel.base_classifier.valid_losses)
 
