@@ -566,7 +566,7 @@ def main():
     pricingmodel.fit(X_raw, y_raw, claims_raw)
 
     # Save the best model
-    pricingmodel.save_model()
+    # pricingmodel.save_model()
 
     #Calculate the predicted_probabilities
     predicted_prob = pricingmodel.predict_claim_probability(test_X_raw)
@@ -575,7 +575,7 @@ def main():
     pricingmodel.predict_premium(test_X_raw)
 
     # Plot the Confusion Matrix
-    pricingmodel.base_classifier.print_confusion_matrix(test_y_raw, predicted_prob)
+    #pricingmodel.base_classifier.print_confusion_matrix(test_y_raw, predicted_prob)
 
     #Evaluate the architecture
     auc, [fpr, tpr] = pricingmodel.base_classifier.evaluate_architecture(predicted_prob,
@@ -586,11 +586,11 @@ def main():
     print("AUC value is: ", auc)
 
     # Plot the ROC_AUC curve
-    pricingmodel.base_classifier.plot_ROC_AUC(auc, fpr, tpr)
+    #pricingmodel.base_classifier.plot_ROC_AUC(auc, fpr, tpr)
 
     # Plot the Loss-Epochs curve
-    pricingmodel.base_classifier.plot_epochs_loss(pricingmodel.base_classifier.num_epochs,
-            pricingmodel.base_classifier.losses, pricingmodel.base_classifier.valid_losses)
+    #pricingmodel.base_classifier.plot_epochs_loss(pricingmodel.base_classifier.num_epochs,
+    #        pricingmodel.base_classifier.losses, pricingmodel.base_classifier.valid_losses)
 
 
 if __name__ == "__main__":
