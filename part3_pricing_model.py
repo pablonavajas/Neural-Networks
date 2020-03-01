@@ -32,8 +32,7 @@ def fit_and_calibrate_classifier(classifier, X, y):
 
 # class for part 3
 class PricingModel():
-    # YOU ARE ALLOWED TO ADD MORE ARGUMENTS AS NECESSARY
-    #def __init__(self, calibrate_probabilities=False):
+    
     def __init__(self, hidden_layers,batch_size, num_epochs, learning_rate,
                  calibrate_probabilities=False):
         """
@@ -42,18 +41,17 @@ class PricingModel():
         """
         self.y_mean = None  #will be a number (the mean of the claims) set in the fit() function
         self.calibrate = calibrate_probabilities
-        self.base_classifier = None # ADD YOUR BASE CLASSIFIER HERE
-        #self.base_classifier = BinaryClaimClassifier(initial_layer, hidden_layers, batch_size,
-        #                            num_epochs, learning_rate)
+        self.base_classifier = None # BASE CLASSIFIER INITIALIASED DURING FIT
+
         self.hidden_layers = hidden_layers
         self.batch_size = batch_size
         self.num_epochs = num_epochs
         self.learning_rate = learning_rate
 
-        self.data_columns = None # Ensure consistency for processed data
+        # Ensure consistency for data processing
+        self.data_columns = None 
         self.drop_cols = None
         
-     # YOU ARE ALLOWED TO ADD MORE ARGUMENTS AS NECESSARY TO THE _preprocessor METHOD
     def _preprocessor(self, X_raw):
         """Data preprocessing function.
 
@@ -76,13 +74,14 @@ class PricingModel():
         if self.drop_cols == None:
             
             # Establish a maximum cardinality for categorical variables
-            max_card = 50
+            max_card = 500
         
             # Find all categorical columns
             categorical_cols = X_raw.select_dtypes(exclude=np.number)
 
             # Select columns with too high cardinality
-            excs_card_cols = [col for col in categorical_cols if categorical_cols[col].nunique() > max_card]
+            excs_card_cols = [col for col in categorical_cols
+                              if categorical_cols[col].nunique() > max_card]
             self.drop_cols = excs_card_cols
         
         # drop columns with excessive cardinality
@@ -99,8 +98,10 @@ class PricingModel():
         
         # Replace all missing values
         # (will be -1 for numerical data and "missing_val" for categorical data)
-        imputer_str = SimpleImputer(missing_values = np.nan, strategy='constant', fill_value='missing_val')
-        imputer_num = SimpleImputer(missing_values = np.nan, strategy='constant', fill_value=-1)
+        imputer_str = SimpleImputer(missing_values = np.nan, strategy='constant',
+                                    fill_value='missing_val')
+        imputer_num = SimpleImputer(missing_values = np.nan, strategy='constant',
+                                    fill_value=-1)
 
         for col in range(len(X_np[0])):
             if col in cat_indexes:
@@ -114,8 +115,10 @@ class PricingModel():
         # Ensure consistency for processed data:
         if self.data_columns == None:
             list_cols = []
+            # Keep a list of the columns' permitted content
             for col in range(X_np.shape[1]):
                 list_cols.append([])
+                # Store all accepted categorical values for a column
                 if col in cat_indexes:
                     list_cols[col] = list(np.unique(X_np[:,col:col+1]))
                     if 'missing_val' not in list_cols[col]:
@@ -133,31 +136,42 @@ class PricingModel():
                 X_col = X_np[:,col]
                 X_col_uniq = list(np.unique(X_col))
 
-                # Ensure column consistency when 1-hot encoding (same columns as trained)
+                # Ensure column consistency when 1-hot encoding
+                # (same columns as trained)
                 if len(X_col_uniq) != len(self.data_columns[col]):
 
+                    # If it contains values not encountered during training:
+                    # Replace those categorical values by 'missing_val'
                     diff_cols = [i for i in X_col_uniq if i not in self.data_columns[col]]
                     for i in range(len(X_col)):
                         if X_col[i] in diff_cols:
                             X_col[i] = 'missing_val'
-                            
+
+                    # If it does not contain all values considered during training:
                     X_col_uniq = list(np.unique(X_col))
                     if len(X_col_uniq) < len(self.data_columns[col]):
+
                         X_col_len = len(X_col)
+                        # - Append the values not included to ensure consistent columns
                         diff_cols = [i for i in self.data_columns[col] if i not in X_col_uniq]
                         X_col = np.concatenate((X_col, np.asarray(diff_cols)), axis=0)
+
+                        # - One Hot encode the data
                         onehot = label_coder.fit_transform(X_col)
+
+                        # - Remove the rows corresponding to the appended values
                         onehot = onehot[:X_col_len,:]
                     else:
                         onehot = label_coder.fit_transform(X_col)
                 else:
                     onehot = label_coder.fit_transform(X_col)
-                    
+
                 if col == 0:
                     X = onehot
                 else:
                     X = np.concatenate((X, onehot), axis=1)
             else:
+                # Scale the numerical values
                 if col == 0:
                     X_col = X_np[:,col:col+1].astype(float)
                     X = (X_col - X_col.min(axis=0)) / (X_col.max(axis=0) - X_col.min(axis=0))
@@ -195,8 +209,9 @@ class PricingModel():
         #Clean the raw data
         X_clean = self._preprocessor(X_raw)
         y_clean = y_raw.to_numpy()
-        
-        initial_layer = len(X_clean[0])
+
+        # The columns of X_clean will set the dimansions of the input layer
+        initial_layer = X_clean.shape[1]
 
         # Split data into training and validation:
         msk2 = np.random.rand(len(X_clean)) < 0.75
@@ -207,6 +222,7 @@ class PricingModel():
         train_y = y_clean[msk2]
         validation_y = y_clean[~msk2]
 
+        # Initialize the classifier
         self.base_classifier = BinaryClaimClassifier(initial_layer, self.hidden_layers,
                                                      self.batch_size, self.num_epochs,
                                                      self.learning_rate)
@@ -214,11 +230,11 @@ class PricingModel():
         # THE FOLLOWING GETS CALLED IF YOU WISH TO CALIBRATE YOUR PROBABILITES
         """
         We won't be calibrating our probabilities hence the else branch
-        will be executed.
+        will always be executed.
         """
         if self.calibrate:
             self.base_classifier = fit_and_calibrate_classifier(
-                self.base_classifier, X_clean, y_raw)
+                self.base_classifier, X_clean, y_clean)
         else:
             self.base_classifier = self.base_classifier.fit(train_X, train_y, validation_X, validation_y)
 
@@ -244,6 +260,7 @@ class PricingModel():
 
         #Clean the data, then pass it into the predict method
         #of the binary classifier
+        
         X_clean = self._preprocessor(X_raw)
         return self.base_classifier.predict(X_clean)
 
@@ -582,8 +599,8 @@ def main():
     train_val = dat[msk]
     test = dat[~msk]
 
-    # Need to split off a claims_raw np.array
-    # Train set data and labels:
+    # Need to split off a claims_raw np.array for train and test set:
+    # - Train set data and labels:
     X_raw = train_val.drop(columns=["claim_amount", "made_claim"])
 
     y_raw = train_val["made_claim"]
@@ -591,7 +608,7 @@ def main():
     claims_raw = train_val["claim_amount"]
     claims_raw = claims_raw.to_numpy()
 
-    # Test set data and labels:
+    # - Test set data and labels:
     test_X_raw = test.drop(columns=["claim_amount", "made_claim"])
 
     test_y_raw = test["made_claim"]
@@ -605,7 +622,7 @@ def main():
 
     #Initiate a Pricing Model
     pricingmodel = PricingModel(hidden_layers,batch_size = 100, num_epochs = 30,
-                                learning_rate = 0.0001, calibrate_probabilities=False)
+                                learning_rate = 0.0001)
 
     # Train the NN.
     pricingmodel.fit(X_raw, y_raw, claims_raw)
@@ -617,7 +634,7 @@ def main():
     predicted_prob = pricingmodel.predict_claim_probability(test_X_raw)
 
     #Calculate the premiums
-    #pricingmodel.predict_premium(test_X_raw)
+    pricingmodel.predict_premium(test_X_raw)
 
     # Plot the Confusion Matrix
     #pricingmodel.base_classifier.print_confusion_matrix(test_y_raw, predicted_prob)
