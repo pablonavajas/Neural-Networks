@@ -525,12 +525,9 @@ def main():
     # Import the dataset
     dat = pd.read_csv("part3_training_data.csv")
 
-    #TODO - Split into appropriate sets (maybe training and test, then will 
-    #pass training into the fit() function of the classifier and split this into
-    #training and validation within the function itself for training
-    #Remember to randomise this dataset before doing splits.
-    #dataset = DataRead.balance_and_split_into_train_valid_test(X_raw, y_raw)
-    #train_att, train_lab, valid_att, valid_lab, test_att, test_lab = dataset
+    # Split into appropriate sets (training and test, then will 
+    # pass training into the fit() function of the classifier and split this into
+    # training and validation within the function itself)
 
     msk = np.random.rand(len(dat)) < 0.8
 
@@ -538,8 +535,6 @@ def main():
     test = dat[~msk]
 
     # Need to split off a claims_raw np.array
-    #Calling it claims_raw in code below
-
     # Train set data and labels:
     X_raw = train_val.drop(columns=["claim_amount", "made_claim"])
 
@@ -560,7 +555,6 @@ def main():
     # Set the input layer
     input_layer = 43
 
-    #TODO - PICK YOUR OWN EXAMPLE
     #Set the hidden layer neurons
     hidden_layers = [10,20,30]
 
@@ -569,41 +563,32 @@ def main():
                                 learning_rate = 0.001, calibrate_probabilities=False)
 
     # Train the NN.
-    #TODO - CHANGE THE Parameter names as appropriate
     pricingmodel.fit(X_raw, y_raw, claims_raw)
 
-    # TODO = Save the best model - commented out for now
+    # Save the best model
     pricingmodel.save_model()
 
     #Calculate the predicted_probabilities
     predicted_prob = pricingmodel.predict_claim_probability(test_X_raw)
 
     #Calculate the premiums
-    #TODO - Change parameter name as appropriate
     pricingmodel.predict_premium(test_X_raw)
 
     # Plot the Confusion Matrix
-    #TODO - not sure if you need this
-    #Change the params as needed
     pricingmodel.base_classifier.print_confusion_matrix(test_y_raw, predicted_prob)
 
     #Evaluate the architecture
-    #TODO - change y_test for variable name you need
     auc, [fpr, tpr] = pricingmodel.base_classifier.evaluate_architecture(predicted_prob,
                                                        test_y_raw)
 
     #Print the AUC value
-    #TODO - need this above 60%
+    #need this above 60%
     print("AUC value is: ", auc)
 
     # Plot the ROC_AUC curve
-    #TODO - May not need this
     pricingmodel.base_classifier.plot_ROC_AUC(auc, fpr, tpr)
 
     # Plot the Loss-Epochs curve
-    #TODO - May not need this
-    #TODO - Will need me to amend the fit() function of the binary classifier if using this
-    # need to declare valid_losses in base_classifier
     pricingmodel.base_classifier.plot_epochs_loss(pricingmodel.base_classifier.num_epochs,
             pricingmodel.base_classifier.losses, pricingmodel.base_classifier.valid_losses)
 
