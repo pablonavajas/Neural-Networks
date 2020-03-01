@@ -1,0 +1,9 @@
+id_policy,pol_bonus,pol_coverage,pol_duration,pol_sit_duration,pol_pay_freq,pol_payd,pol_usage,pol_insee_code,drv_drv2,drv_age1,drv_age2,drv_sex1,drv_sex2,drv_age_lic1,drv_age_lic2,vh_age,vh_cyl,vh_din,vh_fuel,vh_make,vh_model,vh_sale_begin,vh_sale_end,vh_speed,vh_type,vh_value,vh_weight,town_mean_altitude,town_surface_area,population,commune_code,canton_code,city_district_code,regional_department_code,claim_amount,made_claim
+A00013211-V01,0.5,Maxi,36,6,Biannual,No,Retired,68269,No,77,0,M,,55,0,15,1598,111,Gasoline,RENAULT,SCENIC,16,15,185,Tourism,17517,1260,526.0,3216.0,4.8,269.0,20.0,5.0,68,0.0,0
+A00040885-V01,0.5,Maxi,15,5,Yearly,No,WorkPrivate,29019,Yes,52,55,M,F,33,35,12,2184,112,Diesel,NISSAN,ALMERA TINO,12,9,180,Tourism,21500,1480,57.0,4912.0,141.3,19.0,99.0,1.0,29,0.0,0
+A00044495-V01,0.5,Mini,16,6,Monthly,No,Professional,13080,No,52,0,M,,34,0,20,2496,112,Diesel,LAND ROVER,DEFENDER,32,19,130,Commercial,23600,2931,257.0,4488.0,5.3,80.0,27.0,1.0,13,0.0,0
+A00047266-V01,0.5,Maxi,11,7,Biannual,No,WorkPrivate,10387,No,67,0,M,,46,0,12,1149,75,Gasoline,RENAULT,CLIO,14,12,170,Tourism,13050,930,109.0,1339.0,61.2,387.0,99.0,3.0,10,0.0,0
+A00074532-V01,0.5,Median2,16,6,Biannual,No,WorkPrivate,59153,Yes,60,37,M,F,35,14,23,1905,93,Diesel,CITROEN,ZX,23,18,185,Tourism,17974,1035,24.0,1849.0,9.7,153.0,19.0,6.0,59,0.0,0
+A00070733-V01,0.5,Mini,12,6,Monthly,No,Professional,06095,No,69,0,M,,51,0,27,2445,73,Diesel,UNIC,DAILY 35,31,26,117,Commercial,23224,0,204.0,993.0,7.9,95.0,25.0,1.0,06,0.0,0
+A00067369-V01,0.5,Maxi,6,6,Yearly,No,WorkPrivate,75107,No,49,0,M,,31,0,7,2401,185,Diesel,VOLVO,XC90,10,5,195,Tourism,52500,2043,34.0,411.0,57.4,107.0,21.0,1.0,75,0.0,0
+A00049384-V01,0.5,Maxi,8,8,Yearly,No,Retired,06084,No,85,0,F,,53,0,8,1398,68,Diesel,CITROEN,C2,12,9,166,Tourism,16300,996,164.0,1262.0,10.2,84.0,46.0,1.0,06,1544.8000000000006,1
