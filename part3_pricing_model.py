@@ -74,7 +74,7 @@ class PricingModel():
         if self.drop_cols == None:
             
             # Establish a maximum cardinality for categorical variables
-            max_card = 500
+            max_card = 100
         
             # Find all categorical columns
             categorical_cols = X_raw.select_dtypes(exclude=np.number)
