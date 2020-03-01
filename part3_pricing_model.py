@@ -6,13 +6,15 @@ import numpy as np
 # Import extra libraries for building a classifier
 import torch
 import torch.nn as nn
-import torch.optim
+import torch.optim as optim
 import math
 
 # External library to process categorical data
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import LabelBinarizer
+
 import pandas as pd
+import DataRead
 
 
 def fit_and_calibrate_classifier(classifier, X, y):
@@ -31,8 +33,8 @@ def fit_and_calibrate_classifier(classifier, X, y):
 class PricingModel():
     # YOU ARE ALLOWED TO ADD MORE ARGUMENTS AS NECESSARY
     #def __init__(self, calibrate_probabilities=False):
-    def __init__(self, calibrate_probabilities=False, initial_layer, hidden_layers,
-            batch_size, num_epochs, learning_rate):
+    def __init__(self, initial_layer, hidden_layers,
+                 batch_size, num_epochs, learning_rate, calibrate_probabilities=False):
         """
         Feel free to alter this as you wish, adding instance variables as
         necessary.
@@ -371,7 +373,7 @@ class BinaryClaimClassifier(nn.Module):
 
             #self.valid_losses[epoch] = loss.item()
 
-    return self
+        return self
 
     def predict(self, X_clean):
         """ 
@@ -510,34 +512,43 @@ def main():
     """
 
     # Import the dataset
-    X_raw = pd.read_csv("part3_training_data.csv")
+    dat = pd.read_csv("part3_training_data.csv")
 
     #TODO - Split into appropriate sets (maybe training and test, then will 
     #pass training into the fit() function of the classifier and split this into
     #training and validation within the function itself for training
     #Remember to randomise this dataset before doing splits.
+    #dataset = DataRead.balance_and_split_into_train_valid_test(X_raw, y_raw)
+    #train_att, train_lab, valid_att, valid_lab, test_att, test_lab = dataset
+
+    msk = np.random.rand(len(dat)) < 0.8
+
+    train = dat[msk]
+    test = dat[~msk]
     
-    
+       
     #TODO - Need to split off a claims_raw np.array
     #Calling it claims_raw in code below
-    X_raw = dat.drop(columns=["claim_amount", "made_claim"])
+    X_raw = train.drop(columns=["claim_amount", "made_claim"])
 
-    y_raw = dat["made_claim"]
+    y_raw = train["made_claim"]
     y_raw = y_raw.to_numpy()
     
-    claims_raw = dat["claim_amount"]
+    claims_raw = train["claim_amount"]
     claims_raw = claims_raw.to_numpy()
 
+    
+
     #TODO - Set the input layer
-    input_layer = 240
+    input_layer = 43
 
     #TODO - PICK YOUR OWN EXAMPLE
     #Set the hidden layer neurons
     hidden_layers = [10,20,30]
 
     #Initiate a Pricing Model
-    pricingmodel = PricingModel(calibrate_probabilities=False, initial_layer, hidden_layers,
-            batch_size = 100, num_epochs = 30, learning_rate = 0.001)
+    pricingmodel = PricingModel(input_layer, hidden_layers,batch_size = 100, num_epochs = 30,
+                                learning_rate = 0.001, calibrate_probabilities=False)
 
     # Train the NN.
     #TODO - CHANGE THE Parameter names as appropriate

@@ -8,6 +8,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import LabelBinarizer #Encoder, OneHotEncoder
 #from sklearn.compose import ColumnTransformer
 
+import DataRead
 
 import pandas as pd
 
@@ -21,7 +22,7 @@ import pandas as pd
                                if X[c].dtype == np.dtype('0') else X[c]
 """
 
-def process():
+def process(X_raw):
     
 
     ############################################################
@@ -45,7 +46,7 @@ def process():
     X = np.array(col_trans.fit_transform(l1np), dtype = np.int)
     """
 
-    X_raw = pd.read_csv("part3_training_data.csv")
+    #X_raw = pd.read_csv("part3_training_data.csv")
 
     """
     from sklearn.impute import SimpleImputer
@@ -110,38 +111,42 @@ from sklearn.mixture import GaussianMixture
 from matplotlib import pyplot as plt
 import seaborn as sns
 
-def gmm_pred(X):
-
-    sns.set()
-
-    
-    n_components = np.arange(1,21)
-    models = [GaussianMixture(n, covariance_type='full', random_state=0).fit(X) for n in n_components]
-
-    plt.plot(n_components, [m.bic(X) for m in models], label='BIC')
-    plt.plot(n_components, [m.aic(X) for m in models], label='AIC')
-
-    plt.legend(loc='best')
-
-    plt.show()
-    """
-    gmm = GaussianMixture(n_components = 2)
-
-    gmm.fit(X)
-
-    labels = gmm.predict(X)
-
-    print(labels) 
-    """
-    
-    return 0 #labels
 
 
 if __name__=='__main__':
 
-    x = process()
+    dat = pd.read_csv("part3_training_data.csv")
+
+    print(dat)
+    
+    datnp = dat.to_numpy()
+
+    print(
+
+
+
+
+    """
+    #TODO - Need to split off a claims_raw np.array
+    #Calling it claims_raw in code below
+    X_raw = dat.drop(columns=["claim_amount", "made_claim"])
+
+    y_raw = dat["made_claim"]
+    y_raw = y_raw.to_numpy()
+    
+    claims_raw = dat["claim_amount"]
+    claims_raw = claims_raw.to_numpy()
+
+    #TODO - Split into appropriate sets (maybe training and test, then will 
+    #pass training into the fit() function of the classifier and split this into
+    #training and validation within the function itself for training
+    #Remember to randomise this dataset before doing splits.
+    dataset = DataRead.balance_and_split_into_train_valid_test(X_raw, y_raw)
+    train_att, train_lab, valid_att, valid_lab, test_att, test_lab = dataset
+
+    x = process(train_att)
 
     print(x[0])
     print(len(x[0]))
     
-    #gmm_pred(x)
+    """
