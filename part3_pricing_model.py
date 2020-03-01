@@ -8,6 +8,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import math
+import sklearn.metrics as metrics
+import matplotlib.pyplot as plt
 
 # External library to process categorical data
 from sklearn.impute import SimpleImputer
@@ -73,7 +75,7 @@ class PricingModel():
         """
     
         # Establish a maximum cardinality for categorical variables
-        max_card = 70
+        max_card = 50
         
         # Find all categorical columns
         categorical_cols = X_raw.select_dtypes(exclude=np.number)
@@ -88,12 +90,16 @@ class PricingModel():
 
         # ... continue with solution
         # listp = [i[p] for i in l1np for p in range(len(l1np[0])) if isinstance(i[p], (str))]
-    
-        X_np = X_raw.to_numpy()
 
         # Find all columns with categorical data
-        strlist = [i for i in range(len(X_np[0])) if isinstance(X_np[0][i], str) or isinstance(X_np[1][i],str)]
+        categorical_cols = X_raw.select_dtypes(exclude=np.number)
+        
+        X_cols = X_raw.columns
+        X_cat_cols = categorical_cols.columns
+        strlist = [i for i in range(len(X_cols)) if X_cols[i] in X_cat_cols]
 
+        X_np = X_raw.to_numpy()
+        
         # Replace all missing values
         # (will be 0 for numerical data and "missing_val" for categorical data
         imputer_str = SimpleImputer(missing_values = np.nan, strategy='constant', fill_value='missing_val')
@@ -537,7 +543,13 @@ def main():
     claims_raw = train["claim_amount"]
     claims_raw = claims_raw.to_numpy()
 
+    test_X_raw = test.drop(columns=["claim_amount", "made_claim"])
+
+    test_y_raw = test["made_claim"]
+    test_y_raw = test_y_raw.to_numpy()
     
+    test_claims_raw = test["claim_amount"]
+    test_claims_raw = test_claims_raw.to_numpy()
 
     #TODO - Set the input layer
     input_layer = 43
@@ -558,21 +570,21 @@ def main():
     #pricingmodel.save_model()
 
     #Calculate the predicted_probabilities
-    predicted_prob = pricingmodel.predict_claim_probability(X_raw)
+    predicted_prob = pricingmodel.predict_claim_probability(test_X_raw)
 
     #Calculate the premiums
     #TODO - Change parameter name as appropriate
-    pricingmodel.predict_premium(X_raw)
+    pricingmodel.predict_premium(test_X_raw)
 
     # Plot the Confusion Matrix
     #TODO - not sure if you need this
     #Change the params as needed
-    pricingmodel.base_classifier.print_confusion_matrix(y_test, predicted_prob)
+    pricingmodel.base_classifier.print_confusion_matrix(test_y_raw, predicted_prob)
 
     #Evaluate the architecture
     #TODO - change y_test for variable name you need
     auc, [fpr, tpr] = pricingmodel.base_classifier.evaluate_architecture(predicted_prob,
-                                                       y_test)
+                                                       test_y_raw)
 
     #Print the AUC value
     #TODO - need this above 60%
