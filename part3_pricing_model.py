@@ -51,6 +51,7 @@ class PricingModel():
         self.learning_rate = learning_rate
 
         self.data_columns = None # Ensure consistency for processed data
+        self.drop_cols = None
         
      # YOU ARE ALLOWED TO ADD MORE ARGUMENTS AS NECESSARY TO THE _preprocessor METHOD
     def _preprocessor(self, X_raw):
@@ -71,18 +72,21 @@ class PricingModel():
         """
         # =============================================================
         # YOUR CODE HERE
-    
-        # Establish a maximum cardinality for categorical variables
-        max_card = 100
-        
-        # Find all categorical columns
-        categorical_cols = X_raw.select_dtypes(exclude=np.number)
 
-        # Select columns with too high cardinality
-        excs_card_cols = [col for col in categorical_cols if categorical_cols[col].nunique() > max_card]
+        if self.drop_cols == None:
+            
+            # Establish a maximum cardinality for categorical variables
+            max_card = 50
+        
+            # Find all categorical columns
+            categorical_cols = X_raw.select_dtypes(exclude=np.number)
+
+            # Select columns with too high cardinality
+            excs_card_cols = [col for col in categorical_cols if categorical_cols[col].nunique() > max_card]
+            self.drop_cols = excs_card_cols
         
         # drop columns with excessive cardinality
-        X_raw = X_raw.drop(columns=excs_card_cols)
+        X_raw = X_raw.drop(columns=self.drop_cols)
 
         # Find all columns with categorical data
         categorical_cols = X_raw.select_dtypes(exclude=np.number)
