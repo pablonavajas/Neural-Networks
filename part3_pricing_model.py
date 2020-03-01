@@ -16,7 +16,6 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import LabelBinarizer
 
 import pandas as pd
-import DataRead
 
 
 def fit_and_calibrate_classifier(classifier, X, y):
@@ -76,9 +75,7 @@ class PricingModel():
 
         # Select columns with too high cardinality
         excs_card_cols = [col for col in categorical_cols if categorical_cols[col].nunique() > max_card]
-
-        print(excs_card_cols)
-    
+   
         # drop columns with excessive cardinality
         X_raw = X_raw.drop(columns=excs_card_cols)
 
@@ -90,7 +87,7 @@ class PricingModel():
         
         X_cols = X_raw.columns
         X_cat_cols = categorical_cols.columns
-        strlist = [i for i in range(len(X_cols)) if X_cols[i] in X_cat_cols]
+        cat_indexes = [i for i in range(len(X_cols)) if X_cols[i] in X_cat_cols]
 
         X_np = X_raw.to_numpy()
         
@@ -100,18 +97,18 @@ class PricingModel():
         imputer_num = SimpleImputer(missing_values = np.nan, strategy='constant', fill_value=-1)
 
         for col in range(len(X_np[0])):
-            if col in strlist:
+            if col in cat_indexes:
                 imputer_str = imputer_str.fit(X_np[:,col:col+1])
                 X_np[:,col:col+1] = imputer_str.transform(X_np[:,col:col+1])
             else:
                 imputer_num = imputer_num.fit(X_np[:,col:col+1])
                 X_np[:,col:col+1] = imputer_num.transform(X_np[:,col:col+1])
-
-        # Convert Categorical data into 1-Hot format
+                
+        # Convert Categorical data into 1-Hot format and normalize 
         label_coder = LabelBinarizer()
 
         for col in range(len(X_np[0])):
-            if col in strlist:
+            if col in cat_indexes:
                 onehot = label_coder.fit_transform(X_np[:,col])
                 if col == 0:
                     X = onehot
@@ -119,10 +116,13 @@ class PricingModel():
                     X = np.concatenate((X, onehot), axis=1)
             else:
                 if col == 0:
-                    X = X_np[:,col:col+1]
+                    X_col = X_np[:,col:col+1].astype(float)
+                    X = (X_col - X_col.min(axis=0)) / (X_col.max(axis=0) - X_col.min(axis=0))
                 else:
-                    X = np.concatenate((X, X_np[:,col:col+1]), axis=1)
-                    
+                    X_col = X_np[:,col:col+1].astype(float)
+                    X_norm = (X_col - X_col.min(axis=0)) / (X_col.max(axis=0) - X_col.min(axis=0))
+                    X = np.concatenate((X, X_norm), axis=1)
+            
         return X
 
     def fit(self, X_raw, y_raw, claims_raw):
@@ -148,9 +148,20 @@ class PricingModel():
         #Used to calculate the severity constant.
         nnz = np.where(claims_raw != 0)[0]
         self.y_mean = np.mean(claims_raw[nnz])
-       
+
         #Clean the raw data
         X_clean = self._preprocessor(X_raw)
+        y_clean = y_raw.to_numpy()
+
+        # Split data into training and validation:
+        msk2 = np.random.rand(len(X_clean)) < 0.75
+
+        train_X = X_clean[msk2]
+        validation_X = X_clean[~msk2]
+
+        train_y = y_clean[msk2]
+        validation_y = y_clean[~msk2]
+        
 
         # THE FOLLOWING GETS CALLED IF YOU WISH TO CALIBRATE YOUR PROBABILITES
         """
@@ -161,7 +172,7 @@ class PricingModel():
             self.base_classifier = fit_and_calibrate_classifier(
                 self.base_classifier, X_clean, y_raw)
         else:
-            self.base_classifier = self.base_classifier.fit(X_clean, y_raw)
+            self.base_classifier = self.base_classifier.fit(train_X, train_y, validation_X, validation_y)
 
         return self.base_classifier
 
@@ -257,7 +268,7 @@ class BinaryClaimClassifier(nn.Module):
         self.num_epochs = num_epochs
         self.learning_rate = learning_rate
         self.losses = np.zeros(self.num_epochs, dtype=float)
-        #self.valid_losses = np.zeros(self.num_epochs, dtype=float)
+        self.valid_losses = np.zeros(self.num_epochs, dtype=float)
 
         # Model set-up
         # 1) Passing hidden_layers as a list
@@ -282,7 +293,7 @@ class BinaryClaimClassifier(nn.Module):
         out = self.decoder(out)
         return out
 
-    def fit(self, X_clean, y_raw):
+    def fit(self, X_clean, y_raw, X_valid_clean, y_valid):
         """ 
         Parameters
         ----------
@@ -362,16 +373,16 @@ class BinaryClaimClassifier(nn.Module):
      	    ######################
             # validate the model #
             ######################
-            #self.eval()  # prep model for evaluation
-            #X_valid_clean = X_valid_clean.astype(np.float32)
-            #y_valid = y_valid.astype(np.float32)
-            #X_valid_clean_t = torch.from_numpy(X_valid_clean)
-            #y_valid_clean_t = torch.from_numpy(y_valid)
-            #y_valid_clean_t = y_valid_clean_t.view(-1, 1)
-            #outputs = self.forward(X_valid_clean_t)
-            #loss = criterion(outputs, y_valid_clean_t)
+            self.eval()  # prep model for evaluation
+            X_valid_clean = X_valid_clean.astype(np.float32)
+            y_valid = y_valid.astype(np.float32)
+            X_valid_clean_t = torch.from_numpy(X_valid_clean)
+            y_valid_clean_t = torch.from_numpy(y_valid)
+            y_valid_clean_t = y_valid_clean_t.view(-1, 1)
+            outputs = self.forward(X_valid_clean_t)
+            loss = criterion(outputs, y_valid_clean_t)
 
-            #self.valid_losses[epoch] = loss.item()
+            self.valid_losses[epoch] = loss.item()
 
         return self
 
@@ -523,20 +534,21 @@ def main():
 
     msk = np.random.rand(len(dat)) < 0.8
 
-    train = dat[msk]
+    train_val = dat[msk]
     test = dat[~msk]
-    
-       
-    #TODO - Need to split off a claims_raw np.array
-    #Calling it claims_raw in code below
-    X_raw = train.drop(columns=["claim_amount", "made_claim"])
 
-    y_raw = train["made_claim"]
-    y_raw = y_raw.to_numpy()
-    
-    claims_raw = train["claim_amount"]
+    # Need to split off a claims_raw np.array
+    #Calling it claims_raw in code below
+
+    # Train set data and labels:
+    X_raw = train_val.drop(columns=["claim_amount", "made_claim"])
+
+    y_raw = train_val["made_claim"]
+       
+    claims_raw = train_val["claim_amount"]
     claims_raw = claims_raw.to_numpy()
 
+    # Test set data and labels:
     test_X_raw = test.drop(columns=["claim_amount", "made_claim"])
 
     test_y_raw = test["made_claim"]
@@ -545,7 +557,7 @@ def main():
     test_claims_raw = test["claim_amount"]
     test_claims_raw = test_claims_raw.to_numpy()
 
-    #TODO - Set the input layer
+    # Set the input layer
     input_layer = 43
 
     #TODO - PICK YOUR OWN EXAMPLE
@@ -561,7 +573,7 @@ def main():
     pricingmodel.fit(X_raw, y_raw, claims_raw)
 
     # TODO = Save the best model - commented out for now
-    #pricingmodel.save_model()
+    pricingmodel.save_model()
 
     #Calculate the predicted_probabilities
     predicted_prob = pricingmodel.predict_claim_probability(test_X_raw)
@@ -592,8 +604,8 @@ def main():
     #TODO - May not need this
     #TODO - Will need me to amend the fit() function of the binary classifier if using this
     # need to declare valid_losses in base_classifier
-    #pricingmodel.base_classifier.plot_epochs_loss(pricingmodel.base_classifier.num_epochs,
-    #        pricingmodel.base_classifier.losses, pricingmodel.base_classifier.valid_losses)
+    pricingmodel.base_classifier.plot_epochs_loss(pricingmodel.base_classifier.num_epochs,
+            pricingmodel.base_classifier.losses, pricingmodel.base_classifier.valid_losses)
 
 
 if __name__ == "__main__":
