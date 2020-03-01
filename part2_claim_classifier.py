@@ -6,7 +6,7 @@ import torch.optim as optim
 import readData
 import math
 from sklearn import metrics
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 
 def linear_block(in_n, out_n):
@@ -381,7 +381,7 @@ def main():
     test_predicted_labels = classifier.predict(test_att)
 
     # Plot the Confusion Matrix
-    classifier.print_confusion_matrix(test_lab, test_predicted_labels)
+    #classifier.print_confusion_matrix(test_lab, test_predicted_labels)
 
     #Evaluate the architecture
     auc, [fpr, tpr] = classifier.evaluate_architecture(test_predicted_labels,
@@ -391,10 +391,10 @@ def main():
     print("AUC value is: ", auc)
 
     # Plot the ROC_AUC curve
-    classifier.plot_ROC_AUC(auc, fpr, tpr)
+    #classifier.plot_ROC_AUC(auc, fpr, tpr)
 
     # Plot the Loss-Epochs curve
-    classifier.plot_epochs_loss(classifier.num_epochs, classifier.losses, classifier.valid_losses)
+    #classifier.plot_epochs_loss(classifier.num_epochs, classifier.losses, classifier.valid_losses)
 
 
 if __name__ == "__main__":
