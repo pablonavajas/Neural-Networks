@@ -49,6 +49,8 @@ class PricingModel():
         self.batch_size = batch_size
         self.num_epochs = num_epochs
         self.learning_rate = learning_rate
+
+        self.data_columns = None # Ensure consistency for processed data
         
      # YOU ARE ALLOWED TO ADD MORE ARGUMENTS AS NECESSARY TO THE _preprocessor METHOD
     def _preprocessor(self, X_raw):
@@ -71,19 +73,16 @@ class PricingModel():
         # YOUR CODE HERE
     
         # Establish a maximum cardinality for categorical variables
-        max_card = 50
+        max_card = 100
         
         # Find all categorical columns
         categorical_cols = X_raw.select_dtypes(exclude=np.number)
 
         # Select columns with too high cardinality
         excs_card_cols = [col for col in categorical_cols if categorical_cols[col].nunique() > max_card]
-   
+        
         # drop columns with excessive cardinality
         X_raw = X_raw.drop(columns=excs_card_cols)
-
-        # ... continue with solution
-        # listp = [i[p] for i in l1np for p in range(len(l1np[0])) if isinstance(i[p], (str))]
 
         # Find all columns with categorical data
         categorical_cols = X_raw.select_dtypes(exclude=np.number)
@@ -95,7 +94,7 @@ class PricingModel():
         X_np = X_raw.to_numpy()
         
         # Replace all missing values
-        # (will be 0 for numerical data and "missing_val" for categorical data
+        # (will be -1 for numerical data and "missing_val" for categorical data)
         imputer_str = SimpleImputer(missing_values = np.nan, strategy='constant', fill_value='missing_val')
         imputer_num = SimpleImputer(missing_values = np.nan, strategy='constant', fill_value=-1)
 
@@ -106,13 +105,50 @@ class PricingModel():
             else:
                 imputer_num = imputer_num.fit(X_np[:,col:col+1])
                 X_np[:,col:col+1] = imputer_num.transform(X_np[:,col:col+1])
-                
+
+
+        # Ensure consistency for processed data:
+        if self.data_columns == None:
+            list_cols = []
+            for col in range(X_np.shape[1]):
+                list_cols.append([])
+                if col in cat_indexes:
+                    list_cols[col] = list(np.unique(X_np[:,col:col+1]))
+                    if 'missing_val' not in list_cols[col]:
+                        list_cols[col].append('missing_val')
+                else:
+                    list_cols[col] = ['num']
+            
+            self.data_columns = list_cols
+        
         # Convert Categorical data into 1-Hot format and normalize 
         label_coder = LabelBinarizer()
 
-        for col in range(len(X_np[0])):
+        for col in range(X_np.shape[1]):
             if col in cat_indexes:
-                onehot = label_coder.fit_transform(X_np[:,col])
+                X_col = X_np[:,col]
+                X_col_uniq = list(np.unique(X_col))
+
+                # Ensure column consistency when 1-hot encoding (same columns as trained)
+                if len(X_col_uniq) != len(self.data_columns[col]):
+
+                    diff_cols = [i for i in X_col_uniq if i not in self.data_columns[col]]
+                    for i in range(len(X_col)):
+                        if X_col[i] in diff_cols:
+                            X_col[i] = 'missing_val'
+                            
+                    X_col_uniq = list(np.unique(X_col))
+                    if len(X_col_uniq) < len(self.data_columns[col]):
+                        X_col_len = len(X_col)
+                        diff_cols = [i for i in self.data_columns[col] if i not in X_col_uniq]
+                        X_col = np.concatenate((X_col, np.asarray(diff_cols)), axis=0)
+                        onehot = label_coder.fit_transform(X_col)
+                        onehot = onehot[:X_col_len,:]
+                    else:
+                        onehot = label_coder.fit_transform(X_col)
+                else:
+                    onehot = label_coder.fit_transform(X_col)
+                    
                 if col == 0:
                     X = onehot
                 else:
@@ -125,7 +161,7 @@ class PricingModel():
                     X_col = X_np[:,col:col+1].astype(float)
                     X_norm = (X_col - X_col.min(axis=0)) / (X_col.max(axis=0) - X_col.min(axis=0))
                     X = np.concatenate((X, X_norm), axis=1)
-            
+        
         return X
 
     def fit(self, X_raw, y_raw, claims_raw):
@@ -574,7 +610,7 @@ def main():
     pricingmodel.fit(X_raw, y_raw, claims_raw)
 
     # Save the best model
-    # pricingmodel.save_model()
+    pricingmodel.save_model()
 
     #Calculate the predicted_probabilities
     predicted_prob = pricingmodel.predict_claim_probability(test_X_raw)
