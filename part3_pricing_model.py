@@ -39,9 +39,15 @@ class PricingModel():
         Feel free to alter this as you wish, adding instance variables as
         necessary.
         """
-        self.y_mean = None  #will be a number (the mean of the claims) set in the fit() function
+        # ill be a number (the mean of the claims) set
+        # in the fit() function
+        self.y_mean = None  
+
+        # Our model won't calibrate probabilities
         self.calibrate = calibrate_probabilities
-        self.base_classifier = None # BASE CLASSIFIER INITIALIASED DURING FIT
+        
+        # Base classifier initialised during fit
+        self.base_classifier = None 
 
         self.hidden_layers = hidden_layers
         self.batch_size = batch_size
@@ -152,22 +158,25 @@ class PricingModel():
 
                     # If it contains values not encountered during training:
                     # Replace those categorical values by 'missing_val'
-                    diff_cols = [i for i in X_col_uniq if i not in self.data_columns[col]]
+                    diff_cols = [i for i in X_col_uniq if i not in
+                                 self.data_columns[col]]
+                    
                     for i in range(len(X_col)):
                         if X_col[i] in diff_cols:
                             X_col[i] = 'missing_val'
 
-                    # If it does not contain all values considered during training:
+                    # If it does not contain all training values:
                     X_col_uniq = list(np.unique(X_col))
                     if len(X_col_uniq) < len(self.data_columns[col]):
                         
-                        # Append the list of values considered during training:
-                        X_col = np.concatenate((np.asarray(self.data_columns[col]), X_col), axis=0)
+                        # Append the list of training values:
+                        X_col = np.concatenate(
+                            (np.asarray(self.data_columns[col]),X_col), axis=0)
 
                         # - One Hot encode the data
                         onehot = label_coder.fit_transform(X_col)
 
-                        # - Remove the top rows corresponding to the appended values
+                        # - Remove rows corresponding to the appended values
                         onehot = onehot[len(self.data_columns[col]):,:]
                         
                     else:
@@ -183,10 +192,14 @@ class PricingModel():
                 # Scale the numerical values
                 if col == 0:
                     X_col = X_np[:,col:col+1].astype(float)
-                    X = (X_col - X_col.min(axis=0)) / (X_col.max(axis=0) - X_col.min(axis=0))
+                    X = (X_col - X_col.min(axis=0)) / (X_col.max(axis=0) -
+                                                       X_col.min(axis=0))
+                    
                 else:
                     X_col = X_np[:,col:col+1].astype(float)
-                    X_norm = (X_col - X_col.min(axis=0)) / (X_col.max(axis=0) - X_col.min(axis=0))
+                    X_norm = (X_col - X_col.min(axis=0)) / (X_col.max(axis=0) -
+                                                            X_col.min(axis=0))
+                    
                     X = np.concatenate((X, X_norm), axis=1)
                     
         return X
@@ -232,8 +245,10 @@ class PricingModel():
         validation_y = y_clean[~msk2]
 
         # Initialize the classifier
-        self.base_classifier = BinaryClaimClassifier(initial_layer, self.hidden_layers,
-                                                     self.batch_size, self.num_epochs,
+        self.base_classifier = BinaryClaimClassifier(initial_layer,
+                                                     self.hidden_layers,
+                                                     self.batch_size,
+                                                     self.num_epochs,
                                                      self.learning_rate)
 
         # THE FOLLOWING GETS CALLED IF YOU WISH TO CALIBRATE YOUR PROBABILITES
@@ -246,7 +261,8 @@ class PricingModel():
                 self.base_classifier, X_clean, y_clean)
         else:
             self.base_classifier = self.base_classifier.fit(train_X, train_y,
-                                                            validation_X, validation_y)
+                                                            validation_X,
+                                                            validation_y)
 
         return self.base_classifier
 
@@ -306,7 +322,7 @@ class PricingModel():
 
 
 def load_model():
-    # Please alter this section so that it works in tandem with the save_model method of your class
+    
     with open('part3_pricing_model.pickle', 'rb') as target:
         trained_model = pickle.load(target)
     return trained_model
@@ -631,7 +647,7 @@ def main():
     hidden_layers = [10,20,30]
 
     #Initiate a Pricing Model
-    pricingmodel = PricingModel(hidden_layers,batch_size = 100, num_epochs = 30,
+    pricingmodel = PricingModel(hidden_layers,batch_size = 100, num_epochs = 15,
                                 learning_rate = 0.0001)
 
     # Train the NN.
@@ -647,11 +663,12 @@ def main():
     pricingmodel.predict_premium(test_X_raw)
 
     # Plot the Confusion Matrix
-    #pricingmodel.base_classifier.print_confusion_matrix(test_y_raw, predicted_prob)
+    #pricingmodel.base_classifier.print_confusion_matrix(test_y_raw,
+    #                                                    predicted_prob)
 
     #Evaluate the architecture
-    auc, [fpr, tpr] = pricingmodel.base_classifier.evaluate_architecture(predicted_prob,
-                                                       test_y_raw)
+    auc, [fpr, tpr] = pricingmodel.base_classifier.evaluate_architecture(
+        predicted_prob,test_y_raw)
 
     #Print the AUC value
     #need this above 60%
@@ -661,8 +678,10 @@ def main():
     #pricingmodel.base_classifier.plot_ROC_AUC(auc, fpr, tpr)
 
     # Plot the Loss-Epochs curve
-    #pricingmodel.base_classifier.plot_epochs_loss(pricingmodel.base_classifier.num_epochs,
-    #        pricingmodel.base_classifier.losses, pricingmodel.base_classifier.valid_losses)
+    #pricingmodel.base_classifier.plot_epochs_loss(
+    #    pricingmodel.base_classifier.num_epochs,
+    #    pricingmodel.base_classifier.losses,
+    #    pricingmodel.base_classifier.valid_losses)
 
 
 if __name__ == "__main__":
