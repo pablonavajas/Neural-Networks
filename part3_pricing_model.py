@@ -74,7 +74,7 @@ class PricingModel():
         if self.drop_cols == None:
             
             # Establish a maximum cardinality for categorical variables
-            max_card = 100
+            max_card = 50
         
             # Find all categorical columns
             categorical_cols = X_raw.select_dtypes(exclude=np.number)
@@ -621,7 +621,7 @@ def main():
     hidden_layers = [10,20,30]
 
     #Initiate a Pricing Model
-    pricingmodel = PricingModel(hidden_layers,batch_size = 100, num_epochs = 15,
+    pricingmodel = PricingModel(hidden_layers,batch_size = 100, num_epochs = 30,
                                 learning_rate = 0.0001)
 
     # Train the NN.
