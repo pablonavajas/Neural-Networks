@@ -663,12 +663,10 @@ def main():
     pricingmodel.predict_premium(test_X_raw)
 
     # Plot the Confusion Matrix
-    #pricingmodel.base_classifier.print_confusion_matrix(test_y_raw,
-                                                        predicted_prob)
+    #pricingmodel.base_classifier.print_confusion_matrix(test_y_raw,predicted_prob)
 
     #Evaluate the architecture
-    auc, [fpr, tpr] = pricingmodel.base_classifier.evaluate_architecture(
-        predicted_prob,test_y_raw)
+    auc, [fpr, tpr] = pricingmodel.base_classifier.evaluate_architecture(predicted_prob,test_y_raw)
 
     #Print the AUC value
     #need this above 60%
