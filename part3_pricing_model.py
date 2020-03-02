@@ -312,7 +312,7 @@ class PricingModel():
         # For example you could scale all your prices down by a factor
         
 
-        return self.predict_claim_probability(X_raw) * self.y_mean * 1.02
+        return self.predict_claim_probability(X_raw) * self.y_mean * 0.95
 
     def save_model(self):
         """Saves the class instance as a pickle file."""
@@ -654,7 +654,7 @@ def main():
     pricingmodel.fit(X_raw, y_raw, claims_raw)
 
     # Save the best model
-    #pricingmodel.save_model()
+    pricingmodel.save_model()
 
     #Calculate the predicted_probabilities
     predicted_prob = pricingmodel.predict_claim_probability(test_X_raw)
