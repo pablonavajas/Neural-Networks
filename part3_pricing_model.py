@@ -312,7 +312,7 @@ class PricingModel():
         # For example you could scale all your prices down by a factor
         
 
-        return self.predict_claim_probability(X_raw) * self.y_mean * 0.98
+        return self.predict_claim_probability(X_raw) * self.y_mean * 1.02
 
     def save_model(self):
         """Saves the class instance as a pickle file."""
@@ -664,7 +664,7 @@ def main():
 
     # Plot the Confusion Matrix
     #pricingmodel.base_classifier.print_confusion_matrix(test_y_raw,
-    #                                                    predicted_prob)
+                                                        predicted_prob)
 
     #Evaluate the architecture
     auc, [fpr, tpr] = pricingmodel.base_classifier.evaluate_architecture(
