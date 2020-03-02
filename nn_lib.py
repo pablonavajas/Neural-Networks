@@ -175,7 +175,6 @@ class LinearLayer(Layer):
         self._cache_current = None
         self._grad_W_current = None
         self._grad_b_current = None
-        self.batch_size = None
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -199,7 +198,6 @@ class LinearLayer(Layer):
         #######################################################################
 
         self._cache_current = x
-        self.batch_size = x.shape[0]
         return np.dot(x, self._W) + self._b
 
         #######################################################################
@@ -244,8 +242,8 @@ class LinearLayer(Layer):
         #                       ** START OF YOUR CODE **
         #######################################################################
 
-        self._W -= learning_rate * self._grad_W_current/self.batch_size
-        self._b -= learning_rate * self._grad_b_current/self.batch_size
+        self._W -= learning_rate * self._grad_W_current
+        self._b -= learning_rate * self._grad_b_current
 
         #######################################################################
         #                       ** END OF YOUR CODE **
