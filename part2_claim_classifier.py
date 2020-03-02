@@ -359,7 +359,7 @@ def main():
     """
 
     #Import the dataset
-    dataset = readData.balance_and_split_into_train_valid_test("part2_training_data.csv")
+    dataset = readData.split_into_train_valid_test("part2_training_data.csv")
 
     #Split into training, validation and test sets
     train_att, train_lab, valid_att, valid_lab, test_att, test_lab = dataset
