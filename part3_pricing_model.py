@@ -49,6 +49,7 @@ class PricingModel():
         self.learning_rate = learning_rate
 
         # Ensure consistency for data processing
+        self.columns = None
         self.data_columns = None 
         self.drop_cols = None
         
@@ -71,10 +72,17 @@ class PricingModel():
         # =============================================================
         # YOUR CODE HERE
 
+        if self.columns == None:
+            self.columns = list(X_raw.columns)
+
+        # If columns are not consistent with trained model raise exception
+        if list(X_raw.columns) != self.columns:
+            raise ValueError('Data does not match trained data column structure')
+
         if self.drop_cols == None:
             
             # Establish a maximum cardinality for categorical variables
-            max_card = 50
+            max_card = 100
         
             # Find all categorical columns
             categorical_cols = X_raw.select_dtypes(exclude=np.number)
@@ -123,6 +131,7 @@ class PricingModel():
                     list_cols[col] = list(np.unique(X_np[:,col:col+1]))
                     if 'missing_val' not in list_cols[col]:
                         list_cols[col].append('missing_val')
+                    list_cols[col].sort()
                 else:
                     list_cols[col] = ['num']
             
@@ -135,10 +144,11 @@ class PricingModel():
             if col in cat_indexes:
                 X_col = X_np[:,col]
                 X_col_uniq = list(np.unique(X_col))
+                X_col_uniq.sort()
 
                 # Ensure column consistency when 1-hot encoding
                 # (same columns as trained)
-                if len(X_col_uniq) != len(self.data_columns[col]):
+                if X_col_uniq != self.data_columns[col]:
 
                     # If it contains values not encountered during training:
                     # Replace those categorical values by 'missing_val'
@@ -150,17 +160,16 @@ class PricingModel():
                     # If it does not contain all values considered during training:
                     X_col_uniq = list(np.unique(X_col))
                     if len(X_col_uniq) < len(self.data_columns[col]):
-
-                        X_col_len = len(X_col)
-                        # - Append the values not included to ensure consistent columns
-                        diff_cols = [i for i in self.data_columns[col] if i not in X_col_uniq]
-                        X_col = np.concatenate((X_col, np.asarray(diff_cols)), axis=0)
+                        
+                        # Append the list of values considered during training:
+                        X_col = np.concatenate((np.asarray(self.data_columns[col]), X_col), axis=0)
 
                         # - One Hot encode the data
                         onehot = label_coder.fit_transform(X_col)
 
-                        # - Remove the rows corresponding to the appended values
-                        onehot = onehot[:X_col_len,:]
+                        # - Remove the top rows corresponding to the appended values
+                        onehot = onehot[len(self.data_columns[col]):,:]
+                        
                     else:
                         onehot = label_coder.fit_transform(X_col)
                 else:
@@ -179,7 +188,7 @@ class PricingModel():
                     X_col = X_np[:,col:col+1].astype(float)
                     X_norm = (X_col - X_col.min(axis=0)) / (X_col.max(axis=0) - X_col.min(axis=0))
                     X = np.concatenate((X, X_norm), axis=1)
-        
+                    
         return X
 
     def fit(self, X_raw, y_raw, claims_raw):
@@ -236,7 +245,8 @@ class PricingModel():
             self.base_classifier = fit_and_calibrate_classifier(
                 self.base_classifier, X_clean, y_clean)
         else:
-            self.base_classifier = self.base_classifier.fit(train_X, train_y, validation_X, validation_y)
+            self.base_classifier = self.base_classifier.fit(train_X, train_y,
+                                                            validation_X, validation_y)
 
         return self.base_classifier
 
@@ -286,7 +296,7 @@ class PricingModel():
         # For example you could scale all your prices down by a factor
         
 
-        return self.predict_claim_probability(X_raw) * self.y_mean
+        return self.predict_claim_probability(X_raw) * self.y_mean * 0.98
 
     def save_model(self):
         """Saves the class instance as a pickle file."""
